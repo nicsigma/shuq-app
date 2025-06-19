@@ -290,38 +290,57 @@ const ShuQApp = () => {
     if (lastOfferResult === 'accepted') {
       return (
         <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-          <div className="max-w-md mx-auto flex-1 flex flex-col justify-center text-center">
-            <CheckCircle size={80} className="text-green-500 mx-auto mb-6" />
-            <h1 className="text-2xl font-bold mb-4">Tu oferta fue aceptada</h1>
-            <p className="text-gray-600 mb-8">
-              Compraste {selectedProduct?.name} por ${offerPrice.toLocaleString()}
-            </p>
+          <div className="max-w-md mx-auto">
+            {/* Exit Button */}
+            <div className="flex justify-end mb-4">
+              <Button 
+                onClick={() => setShowExitDialog(true)}
+                variant="ghost"
+                className="p-2"
+              >
+                <X size={24} />
+              </Button>
+            </div>
 
-            {showSecondProduct && (
+            <div className="flex-1 flex flex-col justify-center text-center">
+              {/* Linear minimalist smiley emoji */}
+              <div className="text-6xl mb-6">☺</div>
+            
+              <h1 className="text-2xl font-bold mb-4">¡Tu oferta fue aceptada!</h1>
+              <p className="text-gray-600 mb-8">
+                {selectedProduct?.name} por ${offerPrice.toLocaleString()}
+              </p>
+
               <Card className="p-6 rounded-2xl mb-6 bg-yellow-50">
                 <h3 className="font-bold mb-2">Hoy estás de suerte</h3>
                 <p className="text-sm mb-4">
-                  Agregá un 20% de descuento en un segundo producto
+                  Te ganaste un 20% OFF en otra prenda. ¡Escaneá para elegirla!
                 </p>
               </Card>
-            )}
 
-            <div className="space-y-4">
-              <Button 
-                onClick={handleAddSecondProduct}
-                className="w-full bg-purple-600 text-white rounded-2xl py-4"
-              >
-                Agregar producto
-              </Button>
-              <Button 
-                onClick={() => setCurrentScreen('coupons')}
-                variant="outline"
-                className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
-              >
-                No, gracias
-              </Button>
+              <div className="space-y-4">
+                <Button 
+                  onClick={handleAddSecondProduct}
+                  className="w-full bg-purple-600 text-white rounded-2xl py-4"
+                >
+                  Escanear nueva prenda
+                </Button>
+                <Button 
+                  onClick={() => setCurrentScreen('coupons')}
+                  variant="outline"
+                  className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
+                >
+                  Continuar con mi compra
+                </Button>
+              </div>
             </div>
           </div>
+
+          <ConfirmExitDialog 
+            open={showExitDialog}
+            onClose={() => setShowExitDialog(false)}
+            onConfirm={handleExit}
+          />
         </div>
       );
     }
