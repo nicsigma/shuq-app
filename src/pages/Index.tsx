@@ -390,16 +390,23 @@ const ShuQApp = () => {
           </div>
 
           <div className="flex-1 flex flex-col justify-center text-center">
-            {/* Minimalist smiling emoji */}
-            <div className="text-6xl mb-6">☺</div>
+            {/* Minimalist sad/disappointed emoji */}
+            <div className="text-6xl mb-6">☹</div>
             
             <h1 className="text-xl font-bold mb-4">No pudimos aceptar esa oferta</h1>
-            <p className="text-gray-600 mb-6">
-              <span className="font-semibold">#Tip</span> Una buena oferta no siempre es la más baja.
-            </p>
+            
+            {/* Centered tip in lilac color */}
+            <div className="text-center mb-6">
+              <p className="text-sm" style={{ color: '#D5B4F7' }}>
+                <span className="font-semibold">#Tip</span>
+              </p>
+              <p className="text-gray-600 text-sm">
+                Una buena oferta no siempre es la más baja
+              </p>
+            </div>
             
             <p className="text-sm text-yellow-600 mb-8">
-              Te quedan {attemptsRemaining} intentos
+              {attemptsRemaining === 1 ? 'Te queda 1 intento' : `Te quedan ${attemptsRemaining} intentos`}
             </p>
 
             <Button 
