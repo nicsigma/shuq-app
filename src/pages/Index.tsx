@@ -21,10 +21,10 @@ interface Coupon {
 }
 
 const SAMPLE_PRODUCT: Product = {
-  id: '3', 
-  name: 'Remera Oversize', 
+  id: '1', 
+  name: 'CAMPERA AMERICANO NEGRO', 
   price: 25000, 
-  image: 'https://www.ceroestres.com.ar/productos/8013NE/8013NE_1.jpg'
+  image: '/placeholder.svg'
 };
 
 const ShuQApp = () => {
@@ -37,7 +37,6 @@ const ShuQApp = () => {
   const [showSecondProduct, setShowSecondProduct] = useState<boolean>(false);
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
 
-  // Load coupons from localStorage on mount
   useEffect(() => {
     const savedCoupons = localStorage.getItem('shuq-coupons');
     if (savedCoupons) {
@@ -49,7 +48,6 @@ const ShuQApp = () => {
     }
   }, []);
 
-  // Save coupons to localStorage
   const saveCoupons = (newCoupons: Coupon[]) => {
     setCoupons(newCoupons);
     localStorage.setItem('shuq-coupons', JSON.stringify(newCoupons));
@@ -60,9 +58,9 @@ const ShuQApp = () => {
   };
 
   const getAttemptColor = () => {
-    if (attemptsRemaining === 3) return 'bg-green-100 text-green-800';
-    if (attemptsRemaining === 2) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-orange-100 text-orange-800';
+    if (attemptsRemaining === 3) return 'text-green-600';
+    if (attemptsRemaining === 2) return 'text-yellow-600';
+    return 'text-orange-600';
   };
 
   const getAttemptText = () => {
@@ -109,19 +107,6 @@ const ShuQApp = () => {
     setCurrentScreen('result');
   };
 
-  const handleAddSecondProduct = () => {
-    const secondProductCoupon: Coupon = {
-      id: Date.now().toString(),
-      productName: 'Producto Adicional (20% OFF)',
-      offeredPrice: 12000,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-      type: 'second',
-      code: generateCode()
-    };
-    saveCoupons([...coupons, secondProductCoupon]);
-    setCurrentScreen('coupons');
-  };
-
   const resetFlow = () => {
     setOfferPrice(15000);
     setAttemptsRemaining(3);
@@ -133,6 +118,19 @@ const ShuQApp = () => {
   const handleExit = () => {
     setShowExitDialog(false);
     resetFlow();
+  };
+
+  const handleAddSecondProduct = () => {
+    const secondProductCoupon: Coupon = {
+      id: Date.now().toString(),
+      productName: 'Producto Adicional (20% OFF)',
+      offeredPrice: 12000,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+      type: 'second',
+      code: generateCode()
+    };
+    saveCoupons([...coupons, secondProductCoupon]);
+    setCurrentScreen('coupons');
   };
 
   const TimeDisplay = ({ expiresAt }: { expiresAt: Date }) => {
@@ -252,16 +250,14 @@ const ShuQApp = () => {
                 type="number"
                 value={offerPrice}
                 onChange={(e) => setOfferPrice(Number(e.target.value))}
-                className="w-full p-3 border border-gray-300 rounded-2xl text-center text-lg h-10 max-h-10"
+                className="w-full p-3 border border-gray-300 rounded-2xl text-center text-lg max-h-10"
                 placeholder="Ingresá tu oferta"
               />
             </div>
 
-            {/* Attempts Indicator */}
-            <div className="mb-4">
-              <div className={`inline-block px-4 py-2 rounded-lg ${getAttemptColor()}`}>
-                <span className="text-sm font-medium">{getAttemptText()}</span>
-              </div>
+            {/* Attempts Indicator - Moved below input */}
+            <div className="text-center mb-4">
+              <span className={`text-sm font-medium ${getAttemptColor()}`}>{getAttemptText()}</span>
             </div>
 
             <div className="text-center">
@@ -290,7 +286,6 @@ const ShuQApp = () => {
     );
   }
 
-  // Result Screen
   if (currentScreen === 'result') {
     if (lastOfferResult === 'accepted') {
       return (
