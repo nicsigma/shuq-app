@@ -526,33 +526,53 @@ const ShuQApp = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {activeCoupons.map((coupon) => (
-                <Card key={coupon.id} className="p-4 rounded-2xl">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold">{coupon.productName}</h3>
-                      <p className="text-lg font-bold text-green-600">
-                        ${coupon.offeredPrice.toLocaleString()}
-                      </p>
+            <>
+              <div className="space-y-4 mb-6">
+                {activeCoupons.map((coupon) => (
+                  <Card key={coupon.id} className="p-4 rounded-2xl">
+                    <div className="flex items-center gap-4">
+                      {/* Product Image */}
+                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <img 
+                          src={selectedProduct.image} 
+                          alt={coupon.productName}
+                          className="w-full h-full object-cover object-center"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Product Info */}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm">{coupon.productName}</h3>
+                        <p className="text-lg font-bold text-green-600">
+                          ${coupon.offeredPrice.toLocaleString()}
+                        </p>
+                        <div className="mt-1">
+                          <TimeDisplay expiresAt={coupon.expiresAt} />
+                        </div>
+                      </div>
+                      
+                      {/* Code Section */}
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 mb-1">Código</p>
+                        <p className="font-mono font-bold text-sm">{coupon.code}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <TimeDisplay expiresAt={coupon.expiresAt} />
-                    </div>
-                  </div>
-                  <div className="bg-gray-100 p-3 rounded-xl mb-3">
-                    <p className="text-xs text-gray-600 mb-1">Código</p>
-                    <p className="font-mono font-bold text-lg">{coupon.code}</p>
-                  </div>
-                  <Button 
-                    onClick={() => setCurrentScreen('checkout')}
-                    className="w-full bg-purple-600 text-white rounded-xl py-2"
-                  >
-                    Mostrar en caja
-                  </Button>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Single CTA Button */}
+              <Button 
+                onClick={() => setCurrentScreen('checkout')}
+                className="w-full bg-purple-600 text-white rounded-2xl py-4"
+              >
+                Ver todos los códigos
+              </Button>
+            </>
           )}
         </div>
 
