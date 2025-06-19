@@ -228,18 +228,18 @@ const ShuQApp = () => {
               <div className="relative">
                 <input
                   type="range"
-                  min={selectedProduct.price * 0.6}
+                  min={0}
                   max={selectedProduct.price}
                   value={offerPrice}
                   onChange={(e) => setOfferPrice(Number(e.target.value))}
                   className="w-full ultra-thin-slider"
                   style={{
-                    background: `linear-gradient(to right, #D5B4F7 0%, #D5B4F7 ${((offerPrice - selectedProduct.price * 0.6) / (selectedProduct.price - selectedProduct.price * 0.6)) * 100}%, #e5e7eb ${((offerPrice - selectedProduct.price * 0.6) / (selectedProduct.price - selectedProduct.price * 0.6)) * 100}%, #e5e7eb 100%)`
+                    background: `linear-gradient(to right, #D5B4F7 0%, #D5B4F7 ${(offerPrice / selectedProduct.price) * 100}%, #e5e7eb ${(offerPrice / selectedProduct.price) * 100}%, #e5e7eb 100%)`
                   }}
                 />
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>${Math.floor(selectedProduct.price * 0.6).toLocaleString()}</span>
+                <span>$0</span>
                 <span>${selectedProduct.price.toLocaleString()}</span>
               </div>
             </div>
