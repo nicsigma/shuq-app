@@ -329,35 +329,47 @@ const ShuQApp = () => {
     if (lastOfferResult === 'fallback') {
       return (
         <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-          <div className="max-w-md mx-auto flex-1 flex flex-col justify-center text-center">
-            <div className="text-6xl mb-6">😔</div>
-            <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
-            <p className="text-gray-600 mb-6">
-              Pero ganaste un 15% OFF en esta prenda para no irte con las manos vacías
-            </p>
+          <div className="max-w-md mx-auto">
+            {/* Exit Button */}
+            <div className="flex justify-end mb-4">
+              <Button 
+                onClick={() => setShowExitDialog(true)}
+                variant="ghost"
+                className="p-2"
+              >
+                <X size={24} />
+              </Button>
+            </div>
 
-            <Card className="p-6 rounded-2xl mb-6 bg-blue-50">
-              <h3 className="font-bold mb-2">Descuento especial</h3>
-              <p className="text-lg">15% OFF en {selectedProduct?.name}</p>
-              <p className="text-sm text-gray-600 mt-2">Válido por 30 minutos</p>
-            </Card>
+            <div className="flex-1 flex flex-col justify-center text-center">
+              {/* Minimalist sad emoji */}
+              <div className="text-6xl mb-6">☹</div>
+              
+              <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
+              <p className="text-gray-600 mb-6">
+                Pero te regalamos un descuento para no irte con las manos vacías
+              </p>
 
-            <div className="space-y-4">
+              <Card className="p-6 rounded-2xl mb-6 bg-blue-50">
+                <h3 className="font-bold mb-3">OFERTA ESPECIAL</h3>
+                <p className="text-lg mb-1">15% OFF en {selectedProduct?.name}</p>
+                <p className="text-sm text-gray-600">Válido por 30 minutos</p>
+              </Card>
+
               <Button 
                 onClick={() => setCurrentScreen('coupons')}
                 className="w-full bg-purple-600 text-white rounded-2xl py-4"
               >
                 Aceptar descuento
               </Button>
-              <Button 
-                onClick={resetFlow}
-                variant="outline"
-                className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
-              >
-                Salir
-              </Button>
             </div>
           </div>
+
+          <ConfirmExitDialog 
+            open={showExitDialog}
+            onClose={() => setShowExitDialog(false)}
+            onConfirm={handleExit}
+          />
         </div>
       );
     }
@@ -365,29 +377,45 @@ const ShuQApp = () => {
     // Rejected
     return (
       <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-        <div className="max-w-md mx-auto flex-1 flex flex-col justify-center text-center">
-          <div className="text-6xl mb-6">😔</div>
-          <h1 className="text-xl font-bold mb-4">No pudimos aceptar esa oferta</h1>
-          <p className="text-gray-600 mb-2">Probá un poquito más alto</p>
-          <p className="text-sm text-yellow-600 mb-8">
-            Te quedan {attemptsRemaining} intentos
-          </p>
+        <div className="max-w-md mx-auto">
+          {/* Exit Button */}
+          <div className="flex justify-end mb-4">
+            <Button 
+              onClick={() => setShowExitDialog(true)}
+              variant="ghost"
+              className="p-2"
+            >
+              <X size={24} />
+            </Button>
+          </div>
 
-          <div className="space-y-4">
+          <div className="flex-1 flex flex-col justify-center text-center">
+            {/* Minimalist smiling emoji */}
+            <div className="text-6xl mb-6">☺</div>
+            
+            <h1 className="text-xl font-bold mb-4">No pudimos aceptar esa oferta</h1>
+            <p className="text-gray-600 mb-6">
+              <span className="font-semibold">#Tip</span> Una buena oferta no siempre es la más baja.
+            </p>
+            
+            <p className="text-sm text-yellow-600 mb-8">
+              Te quedan {attemptsRemaining} intentos
+            </p>
+
             <Button 
               onClick={() => setCurrentScreen('offer')}
               className="w-full bg-purple-600 text-white rounded-2xl py-4"
             >
-              Intentar de nuevo
-            </Button>
-            <Button 
-              onClick={resetFlow}
-              className="w-full rounded-2xl py-4 bg-gray-600 text-white"
-            >
-              Finalizar
+              Hacer nueva oferta
             </Button>
           </div>
         </div>
+
+        <ConfirmExitDialog 
+          open={showExitDialog}
+          onClose={() => setShowExitDialog(false)}
+          onConfirm={handleExit}
+        />
       </div>
     );
   }
