@@ -3,6 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { X, ShoppingBag, Clock, CheckCircle } from 'lucide-react';
 import { ConfirmExitDialog } from '@/components/ConfirmExitDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Product {
   id: string;
@@ -36,6 +46,7 @@ const ShuQApp = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [showSecondProduct, setShowSecondProduct] = useState<boolean>(false);
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
+  const [showContinueDialog, setShowContinueDialog] = useState<boolean>(false);
 
   useEffect(() => {
     const savedCoupons = localStorage.getItem('shuq-coupons');
@@ -163,6 +174,20 @@ const ShuQApp = () => {
         </span>
       </div>
     );
+  };
+
+  const handleContinueWithPurchase = () => {
+    setShowContinueDialog(true);
+  };
+
+  const handleContinueDialogYes = () => {
+    setShowContinueDialog(false);
+    resetFlow();
+  };
+
+  const handleContinueDialogNo = () => {
+    setShowContinueDialog(false);
+    setCurrentScreen('coupons');
   };
 
   // Splash Screen
@@ -320,13 +345,16 @@ const ShuQApp = () => {
 
               <div className="space-y-4">
                 <Button 
-                  onClick={handleAddSecondProduct}
+                  onClick={() => {
+                    setShowSecondProduct(false);
+                    resetFlow();
+                  }}
                   className="w-full bg-purple-600 text-white rounded-2xl py-4"
                 >
                   Escanear nueva prenda
                 </Button>
                 <Button 
-                  onClick={() => setCurrentScreen('coupons')}
+                  onClick={handleContinueWithPurchase}
                   variant="outline"
                   className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
                 >
@@ -341,6 +369,24 @@ const ShuQApp = () => {
             onClose={() => setShowExitDialog(false)}
             onConfirm={handleExit}
           />
+
+          <AlertDialog open={showContinueDialog} onOpenChange={setShowContinueDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  ¿Querés hacer otra oferta antes de pagar?
+                </AlertDialogTitle>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={handleContinueDialogNo}>
+                  No
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={handleContinueDialogYes}>
+                  Sí
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       );
     }
