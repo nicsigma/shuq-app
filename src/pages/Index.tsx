@@ -208,7 +208,7 @@ const ShuQApp = () => {
               <img 
                 src={selectedProduct.image} 
                 alt={selectedProduct.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
@@ -232,10 +232,7 @@ const ShuQApp = () => {
                   max={selectedProduct.price}
                   value={offerPrice}
                   onChange={(e) => setOfferPrice(Number(e.target.value))}
-                  className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer uber-slider"
-                  style={{
-                    background: `linear-gradient(to right, #D5B4F7 0%, #D5B4F7 ${((offerPrice - selectedProduct.price * 0.6) / (selectedProduct.price - selectedProduct.price * 0.6)) * 100}%, #e5e7eb ${((offerPrice - selectedProduct.price * 0.6) / (selectedProduct.price - selectedProduct.price * 0.6)) * 100}%, #e5e7eb 100%)`
-                  }}
+                  className="w-full ultra-thin-slider"
                 />
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-1">
