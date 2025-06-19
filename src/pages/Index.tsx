@@ -194,12 +194,12 @@ const ShuQApp = () => {
   if (currentScreen === 'splash') {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
-        <div className="text-center">
+        <div className="text-center w-full max-w-md mx-auto">
           <h1 className="text-4xl font-bold mb-4">ShuQ</h1>
-          <p className="text-xl text-gray-600">Vos elegís la prenda... Y el precio ;)</p>
+          <p className="text-xl text-gray-600 mb-8">Vos elegís la prenda... Y el precio ;)</p>
           <Button 
             onClick={() => setCurrentScreen('offer')}
-            className="mt-8 px-8 py-4 text-lg rounded-2xl"
+            className="w-full px-8 py-4 text-lg rounded-2xl"
             style={{ backgroundColor: '#B5FFA3', color: '#000' }}
           >
             Comenzar
@@ -313,9 +313,11 @@ const ShuQApp = () => {
 
   if (currentScreen === 'result') {
     if (lastOfferResult === 'accepted') {
+      const acceptedCoupon = coupons[coupons.length - 1]; // Get the most recent coupon
+      
       return (
         <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto w-full">
             {/* Exit Button */}
             <div className="flex justify-end mb-4">
               <Button 
@@ -327,23 +329,34 @@ const ShuQApp = () => {
               </Button>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center text-center">
-              {/* Linear minimalist smiley emoji */}
+            <div className="flex-1 flex flex-col justify-center text-center px-4">
+              {/* Success emoji */}
               <div className="text-6xl mb-6">☺</div>
             
-              <h1 className="text-2xl font-bold mb-4">¡Tu oferta fue aceptada!</h1>
-              <p className="text-gray-600 mb-8">
-                {selectedProduct?.name} por ${offerPrice.toLocaleString()}
-              </p>
+              <h1 className="text-2xl font-bold mb-6">¡Tu oferta fue aceptada!</h1>
+              
+              {/* Code Display Section */}
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-4">Acercate a caja y mostrá este código</h2>
+                <div className="bg-gray-100 p-6 rounded-2xl mb-6">
+                  <p className="text-4xl font-mono font-bold text-center mb-2">
+                    {acceptedCoupon?.code || 'ABC123XY'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {selectedProduct?.name} por ${offerPrice.toLocaleString()}
+                  </p>
+                </div>
+              </div>
 
-              <Card className="p-6 rounded-2xl mb-6 bg-yellow-50">
-                <h3 className="font-bold mb-2">Hoy estás de suerte</h3>
-                <p className="text-sm mb-4">
+              {/* Promotional message - smaller and lower */}
+              <div className="text-center mb-8">
+                <p className="text-sm font-semibold mb-1">Hoy estás de suerte</p>
+                <p className="text-sm text-gray-600">
                   Te ganaste un 20% OFF en otra prenda. ¡Escaneá para elegirla!
                 </p>
-              </Card>
+              </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 w-full">
                 <Button 
                   onClick={() => {
                     setShowSecondProduct(false);
@@ -394,7 +407,7 @@ const ShuQApp = () => {
     if (lastOfferResult === 'fallback') {
       return (
         <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto w-full">
             {/* Exit Button */}
             <div className="flex justify-end mb-4">
               <Button 
@@ -406,7 +419,7 @@ const ShuQApp = () => {
               </Button>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center text-center">
+            <div className="flex-1 flex flex-col justify-center text-center px-4">
               {/* Minimalist sad emoji */}
               <div className="text-6xl mb-6">☹</div>
               
@@ -442,7 +455,7 @@ const ShuQApp = () => {
     // Rejected
     return (
       <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto w-full">
           {/* Exit Button */}
           <div className="flex justify-end mb-4">
             <Button 
@@ -454,7 +467,7 @@ const ShuQApp = () => {
             </Button>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center text-center">
+          <div className="flex-1 flex flex-col justify-center text-center px-4">
             {/* Minimalist sad/disappointed emoji */}
             <div className="text-6xl mb-6">☹</div>
             
