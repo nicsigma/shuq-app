@@ -434,20 +434,25 @@ const ShuQApp = () => {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto">
         <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">Mis Cupones</h1>
+          {/* Exit Button */}
+          <div className="flex justify-end mb-4">
             <Button 
-              onClick={resetFlow}
-              variant="outline"
-              className="rounded-full border-purple-600 text-purple-600"
+              onClick={() => setShowExitDialog(true)}
+              variant="ghost"
+              className="p-2"
             >
-              Nuevo
+              <X size={24} />
             </Button>
+          </div>
+
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold mb-2">Mis ofertas aprobadas</h1>
+            <p className="text-gray-600 text-sm">Mostrá el código en caja para pagar el precio acordado.</p>
           </div>
 
           {activeCoupons.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">No tenés cupones activos</p>
+              <p className="text-gray-500 mb-4">No tenés ofertas aprobadas</p>
               <Button 
                 onClick={resetFlow}
                 className="bg-purple-600 text-white rounded-2xl px-6 py-3"
@@ -470,21 +475,27 @@ const ShuQApp = () => {
                       <TimeDisplay expiresAt={coupon.expiresAt} />
                     </div>
                   </div>
-                  <div className="bg-gray-100 p-3 rounded-xl">
-                    <p className="text-xs text-gray-600 mb-1">Código:</p>
+                  <div className="bg-gray-100 p-3 rounded-xl mb-3">
+                    <p className="text-xs text-gray-600 mb-1">Código</p>
                     <p className="font-mono font-bold text-lg">{coupon.code}</p>
                   </div>
                   <Button 
                     onClick={() => setCurrentScreen('checkout')}
-                    className="w-full mt-3 bg-purple-600 text-white rounded-xl py-2"
+                    className="w-full bg-purple-600 text-white rounded-xl py-2"
                   >
-                    Usar en caja
+                    Mostrar en caja
                   </Button>
                 </Card>
               ))}
             </div>
           )}
         </div>
+
+        <ConfirmExitDialog 
+          open={showExitDialog}
+          onClose={() => setShowExitDialog(false)}
+          onConfirm={handleExit}
+        />
       </div>
     );
   }
@@ -495,30 +506,51 @@ const ShuQApp = () => {
     
     return (
       <div className="min-h-screen bg-black text-white p-4 font-roboto">
-        <div className="max-w-md mx-auto text-center">
-          <h1 className="text-2xl font-bold mb-6 pt-8">Mostrar en Caja</h1>
+        <div className="max-w-md mx-auto">
+          {/* Exit Button */}
+          <div className="flex justify-end mb-4">
+            <Button 
+              onClick={() => setShowExitDialog(true)}
+              variant="ghost"
+              className="p-2 text-white hover:bg-white/10"
+            >
+              <X size={24} />
+            </Button>
+          </div>
+
+          <h1 className="text-2xl font-bold mb-8 text-center">Mostrá en caja tus ofertas</h1>
           
-          {activeCoupons.map((coupon) => (
-            <Card key={coupon.id} className="p-6 rounded-2xl mb-6 bg-white text-black">
-              <h2 className="text-xl font-bold mb-2">{coupon.productName}</h2>
-              <p className="text-2xl font-bold text-green-600 mb-4">
-                ${coupon.offeredPrice.toLocaleString()}
-              </p>
-              <div className="bg-gray-100 p-4 rounded-xl mb-4">
-                <p className="text-4xl font-mono font-bold">{coupon.code}</p>
-              </div>
-              <TimeDisplay expiresAt={coupon.expiresAt} />
-            </Card>
-          ))}
+          <div className="space-y-6">
+            {activeCoupons.map((coupon) => (
+              <Card key={coupon.id} className="p-6 rounded-2xl bg-white text-black">
+                <h2 className="text-xl font-bold mb-2">{coupon.productName}</h2>
+                <p className="text-2xl font-bold text-green-600 mb-4">
+                  ${coupon.offeredPrice.toLocaleString()}
+                </p>
+                <div className="bg-gray-100 p-4 rounded-xl mb-4">
+                  <p className="text-4xl font-mono font-bold text-center">{coupon.code}</p>
+                </div>
+                <div className="flex justify-center">
+                  <TimeDisplay expiresAt={coupon.expiresAt} />
+                </div>
+              </Card>
+            ))}
+          </div>
 
           <Button 
             onClick={() => setCurrentScreen('coupons')}
             variant="outline"
-            className="w-full rounded-2xl py-4 border-white text-white hover:bg-white hover:text-black"
+            className="w-full rounded-2xl py-4 border-white text-white hover:bg-white hover:text-black mt-8"
           >
-            Volver a cupones
+            Volver a ofertas
           </Button>
         </div>
+
+        <ConfirmExitDialog 
+          open={showExitDialog}
+          onClose={() => setShowExitDialog(false)}
+          onConfirm={handleExit}
+        />
       </div>
     );
   }
