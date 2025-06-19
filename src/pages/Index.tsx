@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, ShoppingBag, Clock, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Clock, CheckCircle, X } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -27,7 +27,7 @@ const PRODUCTS: Product[] = [
 ];
 
 const ShuQApp = () => {
-  const [currentScreen, setCurrentScreen] = useState<'entry' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'checkout'>('entry');
+  const [currentScreen, setCurrentScreen] = useState<'entry' | 'offer' | 'result' | 'coupons' | 'checkout'>('entry');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [offerPrice, setOfferPrice] = useState<number>(0);
   const [attemptsRemaining, setAttemptsRemaining] = useState<number>(3);
@@ -60,7 +60,13 @@ const ShuQApp = () => {
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product);
     setOfferPrice(Math.floor(product.price * 0.6));
-    setCurrentScreen('onboarding');
+    setCurrentScreen('offer');
+  };
+
+  const getAttemptColor = () => {
+    if (attemptsRemaining === 3) return 'bg-green-500';
+    if (attemptsRemaining === 2) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
   const handleSendOffer = () => {
@@ -160,15 +166,15 @@ const ShuQApp = () => {
     );
   };
 
-  // Entry Screen
+  // Entry Screen with Welcome and Product Selection
   if (currentScreen === 'entry') {
     return (
-      <div className="min-h-screen bg-white p-4">
+      <div className="min-h-screen bg-white p-4 font-roboto">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8 pt-8">
-            <h1 className="text-3xl font-bold mb-2">ShuQ</h1>
-            <p className="text-gray-600">Simulador de Escaneo QR</p>
-            <p className="text-sm text-gray-500 mt-2">Seleccioná un producto para comenzar</p>
+            <h1 className="text-2xl font-bold mb-4">¡Bienvenidos a ShuQ!</h1>
+            <p className="text-lg font-medium mb-2">¿Listos para negociar?</p>
+            <p className="text-gray-600 text-sm">Seleccioná un producto para comenzar</p>
           </div>
 
           <div className="space-y-4">
@@ -177,13 +183,13 @@ const ShuQApp = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-lg">{product.name}</h3>
-                    <p className="text-gray-600">${product.price.toLocaleString()}</p>
+                    <p className="text-gray-600">Precio oficial: ${product.price.toLocaleString()}</p>
                   </div>
                   <Button 
                     onClick={() => handleProductSelect(product)}
-                    className="rounded-full bg-black text-white hover:bg-gray-800"
+                    className="rounded-full bg-purple-600 text-white hover:bg-purple-700"
                   >
-                    <ArrowRight size={20} />
+                    Seleccionar
                   </Button>
                 </div>
               </Card>
@@ -194,7 +200,7 @@ const ShuQApp = () => {
             <Button 
               onClick={() => setCurrentScreen('coupons')}
               variant="outline"
-              className="w-full rounded-2xl py-6 text-lg border-black"
+              className="w-full rounded-2xl py-6 text-lg border-purple-600 text-purple-600"
             >
               Ver Mis Cupones
             </Button>
@@ -204,50 +210,23 @@ const ShuQApp = () => {
     );
   }
 
-  // Onboarding Screen
-  if (currentScreen === 'onboarding') {
-    return (
-      <div className="min-h-screen bg-white p-4 flex flex-col">
-        <div className="max-w-md mx-auto flex-1 flex flex-col justify-center">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-6">¡Negociemos!</h1>
-            
-            <div className="space-y-4 text-left bg-gray-50 p-6 rounded-2xl">
-              <p className="flex items-start gap-3">
-                <span className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
-                Tenés 3 chances para proponer tu precio
-              </p>
-              <p className="flex items-start gap-3">
-                <span className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
-                Usá el slider o ingresá el valor manualmente
-              </p>
-              <p className="flex items-start gap-3">
-                <span className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
-                Enviá tu oferta para ver si es aceptada
-              </p>
-              <p className="flex items-start gap-3">
-                <span className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">4</span>
-                Si es aceptada, mostrá el código en caja
-              </p>
-            </div>
-          </div>
-
-          <Button 
-            onClick={() => setCurrentScreen('offer')}
-            className="w-full bg-black text-white rounded-2xl py-6 text-lg hover:bg-gray-800"
-          >
-            ¡Empezar!
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Offer Screen
+  // Offer Screen with improved UI
   if (currentScreen === 'offer' && selectedProduct) {
     return (
-      <div className="min-h-screen bg-white p-4">
+      <div className="min-h-screen bg-white p-4 font-roboto">
         <div className="max-w-md mx-auto">
+          {/* Back Button */}
+          <div className="mb-4">
+            <Button 
+              onClick={() => setCurrentScreen('entry')}
+              variant="ghost"
+              className="p-2"
+            >
+              <ArrowLeft size={24} />
+            </Button>
+          </div>
+
+          {/* Product Details */}
           <div className="text-center mb-6">
             <Card className="p-6 rounded-2xl">
               <div className="bg-gray-100 rounded-xl h-48 mb-4 flex items-center justify-center">
@@ -255,22 +234,30 @@ const ShuQApp = () => {
               </div>
               <h2 className="text-xl font-bold mb-2">{selectedProduct.name}</h2>
               <p className="text-gray-600 mb-4">Precio oficial: ${selectedProduct.price.toLocaleString()}</p>
-              <p className="text-sm bg-yellow-100 text-yellow-800 p-2 rounded-lg">
-                Te quedan {attemptsRemaining} intentos
-              </p>
             </Card>
           </div>
 
+          {/* Semáforo Indicator */}
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded-full ${getAttemptColor()}`}></div>
+              <span className="text-sm font-medium">
+                {attemptsRemaining} {attemptsRemaining === 1 ? 'intento' : 'intentos'} restante{attemptsRemaining === 1 ? '' : 's'}
+              </span>
+            </div>
+          </div>
+
+          {/* Offer Input Section */}
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Tu oferta:</label>
+              <p className="text-lg font-medium mb-4 text-center">¿Por cuánto querés pagar?</p>
               <input
                 type="range"
                 min={selectedProduct.price * 0.3}
                 max={selectedProduct.price}
                 value={offerPrice}
                 onChange={(e) => setOfferPrice(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
                 <span>${Math.floor(selectedProduct.price * 0.3).toLocaleString()}</span>
@@ -279,6 +266,7 @@ const ShuQApp = () => {
             </div>
 
             <div>
+              <p className="text-sm text-gray-600 mb-2 text-center">Ingresá el monto manualmente</p>
               <input
                 type="number"
                 value={offerPrice}
@@ -295,11 +283,15 @@ const ShuQApp = () => {
               </p>
             </div>
 
+            <div className="text-center text-sm text-gray-600 mb-4">
+              <p>Tenés 3 intentos para proponer tu precio. Usá el slider o ingresá el monto manualmente. Si tu oferta es aceptada, vas a obtener un cupón para redimir en caja.</p>
+            </div>
+
             <Button 
               onClick={handleSendOffer}
-              className="w-full bg-black text-white rounded-2xl py-6 text-lg hover:bg-gray-800"
+              className="w-full bg-purple-600 text-white rounded-2xl py-6 text-lg hover:bg-purple-700"
             >
-              Enviar mi oferta
+              Enviar oferta
             </Button>
           </div>
         </div>
@@ -311,40 +303,34 @@ const ShuQApp = () => {
   if (currentScreen === 'result') {
     if (lastOfferResult === 'accepted') {
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col">
+        <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
           <div className="max-w-md mx-auto flex-1 flex flex-col justify-center text-center">
             <CheckCircle size={80} className="text-green-500 mx-auto mb-6" />
-            <h1 className="text-2xl font-bold mb-4">¡Tu oferta fue aceptada! 🎉</h1>
+            <h1 className="text-2xl font-bold mb-4">Tu oferta fue aceptada</h1>
             <p className="text-gray-600 mb-8">
               Compraste {selectedProduct?.name} por ${offerPrice.toLocaleString()}
             </p>
 
             {showSecondProduct && (
               <Card className="p-6 rounded-2xl mb-6 bg-yellow-50">
-                <h3 className="font-bold mb-2">¡Oferta especial!</h3>
+                <h3 className="font-bold mb-2">Hoy estás de suerte</h3>
                 <p className="text-sm mb-4">
-                  Agregá un segundo producto con 20% de descuento
-                  <br />
-                  <span className="text-xs text-gray-500">Válido por 30 minutos</span>
+                  Agregá un 20% de descuento en un segundo producto
                 </p>
-                <div className="bg-white p-4 rounded-xl">
-                  <p className="font-medium">Producto Adicional</p>
-                  <p className="text-green-600">$12.000 (20% OFF)</p>
-                </div>
               </Card>
             )}
 
             <div className="space-y-4">
               <Button 
                 onClick={handleAddSecondProduct}
-                className="w-full bg-black text-white rounded-2xl py-4"
+                className="w-full bg-purple-600 text-white rounded-2xl py-4"
               >
                 Agregar producto
               </Button>
               <Button 
                 onClick={() => setCurrentScreen('coupons')}
                 variant="outline"
-                className="w-full rounded-2xl py-4 border-black"
+                className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
               >
                 No, gracias
               </Button>
@@ -356,12 +342,12 @@ const ShuQApp = () => {
 
     if (lastOfferResult === 'fallback') {
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col">
+        <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
           <div className="max-w-md mx-auto flex-1 flex flex-col justify-center text-center">
-            <div className="text-6xl mb-6">😓</div>
-            <h1 className="text-xl font-bold mb-4">Tus ofertas no fueron aceptadas</h1>
+            <div className="text-6xl mb-6">😔</div>
+            <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
             <p className="text-gray-600 mb-6">
-              Pero acá tenés un descuento de consolación
+              Pero ganaste un 15% OFF en esta prenda para no irte con las manos vacías
             </p>
 
             <Card className="p-6 rounded-2xl mb-6 bg-blue-50">
@@ -373,14 +359,14 @@ const ShuQApp = () => {
             <div className="space-y-4">
               <Button 
                 onClick={() => setCurrentScreen('coupons')}
-                className="w-full bg-black text-white rounded-2xl py-4"
+                className="w-full bg-purple-600 text-white rounded-2xl py-4"
               >
                 Aceptar descuento
               </Button>
               <Button 
                 onClick={resetFlow}
                 variant="outline"
-                className="w-full rounded-2xl py-4 border-black"
+                className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
               >
                 Salir
               </Button>
@@ -392,11 +378,11 @@ const ShuQApp = () => {
 
     // Rejected
     return (
-      <div className="min-h-screen bg-white p-4 flex flex-col">
+      <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
         <div className="max-w-md mx-auto flex-1 flex flex-col justify-center text-center">
-          <X size={80} className="text-red-500 mx-auto mb-6" />
+          <div className="text-6xl mb-6">😔</div>
           <h1 className="text-xl font-bold mb-4">No pudimos aceptar esa oferta</h1>
-          <p className="text-gray-600 mb-2">Probá un poquito más alto 😉</p>
+          <p className="text-gray-600 mb-2">Probá un poquito más alto</p>
           <p className="text-sm text-yellow-600 mb-8">
             Te quedan {attemptsRemaining} intentos
           </p>
@@ -404,16 +390,15 @@ const ShuQApp = () => {
           <div className="space-y-4">
             <Button 
               onClick={() => setCurrentScreen('offer')}
-              className="w-full bg-black text-white rounded-2xl py-4"
+              className="w-full bg-purple-600 text-white rounded-2xl py-4"
             >
               Intentar de nuevo
             </Button>
             <Button 
               onClick={resetFlow}
-              variant="outline"
-              className="w-full rounded-2xl py-4 border-black"
+              className="w-full rounded-2xl py-4 bg-gray-600 text-white"
             >
-              Salir
+              Finalizar
             </Button>
           </div>
         </div>
@@ -426,14 +411,14 @@ const ShuQApp = () => {
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
     
     return (
-      <div className="min-h-screen bg-white p-4">
+      <div className="min-h-screen bg-white p-4 font-roboto">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Mis Cupones</h1>
             <Button 
               onClick={resetFlow}
               variant="outline"
-              className="rounded-full border-black"
+              className="rounded-full border-purple-600 text-purple-600"
             >
               Nuevo
             </Button>
@@ -444,7 +429,7 @@ const ShuQApp = () => {
               <p className="text-gray-500 mb-4">No tenés cupones activos</p>
               <Button 
                 onClick={resetFlow}
-                className="bg-black text-white rounded-2xl px-6 py-3"
+                className="bg-purple-600 text-white rounded-2xl px-6 py-3"
               >
                 Crear oferta
               </Button>
@@ -470,7 +455,7 @@ const ShuQApp = () => {
                   </div>
                   <Button 
                     onClick={() => setCurrentScreen('checkout')}
-                    className="w-full mt-3 bg-black text-white rounded-xl py-2"
+                    className="w-full mt-3 bg-purple-600 text-white rounded-xl py-2"
                   >
                     Usar en caja
                   </Button>
@@ -488,7 +473,7 @@ const ShuQApp = () => {
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
     
     return (
-      <div className="min-h-screen bg-black text-white p-4">
+      <div className="min-h-screen bg-black text-white p-4 font-roboto">
         <div className="max-w-md mx-auto text-center">
           <h1 className="text-2xl font-bold mb-6 pt-8">Mostrar en Caja</h1>
           
