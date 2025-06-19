@@ -23,14 +23,14 @@ interface Coupon {
 const SAMPLE_PRODUCT: Product = {
   id: '1', 
   name: 'CAMPERA AMERICANO NEGRO', 
-  price: 25000, 
-  image: '/placeholder.svg'
+  price: 125000, 
+  image: '/lovable-uploads/8d13fdd4-4374-49ac-9e3d-a4898309bd29.png'
 };
 
 const ShuQApp = () => {
   const [currentScreen, setCurrentScreen] = useState<'splash' | 'offer' | 'result' | 'coupons' | 'checkout'>('splash');
   const [selectedProduct] = useState<Product>(SAMPLE_PRODUCT);
-  const [offerPrice, setOfferPrice] = useState<number>(15000);
+  const [offerPrice, setOfferPrice] = useState<number>(75000);
   const [attemptsRemaining, setAttemptsRemaining] = useState<number>(3);
   const [lastOfferResult, setLastOfferResult] = useState<'accepted' | 'rejected' | 'fallback' | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -108,7 +108,7 @@ const ShuQApp = () => {
   };
 
   const resetFlow = () => {
-    setOfferPrice(15000);
+    setOfferPrice(75000);
     setAttemptsRemaining(3);
     setLastOfferResult(null);
     setShowSecondProduct(false);
