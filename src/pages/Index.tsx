@@ -24,7 +24,7 @@ const SAMPLE_PRODUCT: Product = {
   id: '3', 
   name: 'Remera Oversize', 
   price: 25000, 
-  image: '/placeholder.svg'
+  image: 'https://www.ceroestres.com.ar/productos/8013NE/8013NE_1.jpg'
 };
 
 const ShuQApp = () => {
@@ -66,8 +66,8 @@ const ShuQApp = () => {
   };
 
   const getAttemptText = () => {
-    if (attemptsRemaining === 1) return 'Te queda 1 intento';
-    return `Te quedan ${attemptsRemaining} intentos`;
+    if (attemptsRemaining === 1) return 'Tenés 1 intento';
+    return `Tenés ${attemptsRemaining} intentos`;
   };
 
   const handleSendOffer = () => {
@@ -206,8 +206,16 @@ const ShuQApp = () => {
 
           {/* Product Details */}
           <div className="flex items-start gap-4 mb-6">
-            <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <ShoppingBag size={32} className="text-gray-500" />
+            <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <img 
+                src={selectedProduct.image} 
+                alt={selectedProduct.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                }}
+              />
             </div>
             <div>
               <h2 className="text-lg font-bold mb-1">{selectedProduct.name}</h2>
@@ -215,27 +223,25 @@ const ShuQApp = () => {
             </div>
           </div>
 
-          {/* Attempts Indicator */}
-          <div className="mb-6">
-            <div className={`inline-block px-4 py-2 rounded-lg ${getAttemptColor()}`}>
-              <span className="text-sm font-medium">{getAttemptText()}</span>
-            </div>
-          </div>
-
           {/* Offer Section */}
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-bold mb-4">¿Cuánto querés pagar?</h3>
-              <input
-                type="range"
-                min={selectedProduct.price * 0.3}
-                max={selectedProduct.price}
-                value={offerPrice}
-                onChange={(e) => setOfferPrice(Number(e.target.value))}
-                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-              />
+              <div className="relative">
+                <input
+                  type="range"
+                  min={selectedProduct.price * 0.6}
+                  max={selectedProduct.price}
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(Number(e.target.value))}
+                  className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer uber-slider"
+                  style={{
+                    background: `linear-gradient(to right, #D5B4F7 0%, #D5B4F7 ${((offerPrice - selectedProduct.price * 0.6) / (selectedProduct.price - selectedProduct.price * 0.6)) * 100}%, #e5e7eb ${((offerPrice - selectedProduct.price * 0.6) / (selectedProduct.price - selectedProduct.price * 0.6)) * 100}%, #e5e7eb 100%)`
+                  }}
+                />
+              </div>
               <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>${Math.floor(selectedProduct.price * 0.3).toLocaleString()}</span>
+                <span>${Math.floor(selectedProduct.price * 0.6).toLocaleString()}</span>
                 <span>${selectedProduct.price.toLocaleString()}</span>
               </div>
             </div>
@@ -246,9 +252,16 @@ const ShuQApp = () => {
                 type="number"
                 value={offerPrice}
                 onChange={(e) => setOfferPrice(Number(e.target.value))}
-                className="w-full p-4 border border-gray-300 rounded-2xl text-center text-2xl font-bold"
+                className="w-full p-3 border border-gray-300 rounded-2xl text-center text-lg h-10 max-h-10"
                 placeholder="Ingresá tu oferta"
               />
+            </div>
+
+            {/* Attempts Indicator */}
+            <div className="mb-4">
+              <div className={`inline-block px-4 py-2 rounded-lg ${getAttemptColor()}`}>
+                <span className="text-sm font-medium">{getAttemptText()}</span>
+              </div>
             </div>
 
             <div className="text-center">
