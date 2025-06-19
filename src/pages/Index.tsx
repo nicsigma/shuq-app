@@ -497,10 +497,17 @@ const ShuQApp = () => {
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
     
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
+      <div className="min-h-screen bg-white p-4 font-roboto pb-24">
         <div className="max-w-md mx-auto">
-          {/* Exit Button */}
-          <div className="flex justify-end mb-4">
+          {/* Header with Exit and New Offer buttons */}
+          <div className="flex justify-between items-center mb-4">
+            <Button 
+              onClick={resetFlow}
+              variant="outline"
+              className="text-xs px-3 py-2 h-8 rounded-full border-gray-300 text-gray-600"
+            >
+              Hacer nueva oferta
+            </Button>
             <Button 
               onClick={() => setShowExitDialog(true)}
               variant="ghost"
@@ -564,17 +571,23 @@ const ShuQApp = () => {
                   </Card>
                 ))}
               </div>
+            </>
+          )}
+        </div>
 
-              {/* Single CTA Button */}
+        {/* Fixed CTA Button - only show if there are active coupons */}
+        {activeCoupons.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+            <div className="max-w-md mx-auto">
               <Button 
                 onClick={() => setCurrentScreen('checkout')}
                 className="w-full bg-purple-600 text-white rounded-2xl py-4"
               >
                 Ver todos los códigos
               </Button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
 
         <ConfirmExitDialog 
           open={showExitDialog}
