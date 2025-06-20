@@ -390,9 +390,16 @@ const ShuQApp = () => {
               
               <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
               
-              <p className="text-gray-600 text-sm mb-8">
+              <p className="text-gray-600 text-sm mb-6">
                 Pero te regalamos un descuento para no irte con las manos vacías.
               </p>
+
+              {/* Special Discount Coupon Section */}
+              <div className="bg-gray-50 p-6 rounded-2xl mb-8 border-2 border-dashed border-gray-300">
+                <h3 className="text-lg font-bold mb-2">OFERTA ESPECIAL</h3>
+                <p className="text-md font-semibold mb-1">15% OFF en Camisa Blanca</p>
+                <p className="text-sm text-gray-600">Válido por 30 minutos.</p>
+              </div>
 
               <div className="space-y-4 w-full">
                 <Button onClick={resetFlow} className="w-full bg-purple-600 text-white rounded-2xl py-4">
