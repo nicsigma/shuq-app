@@ -543,15 +543,6 @@ const ShuQApp = () => {
           {/* Header with Menu and Exit - removed the "Hacer nueva oferta" button */}
           <div className="flex justify-between items-center mb-4">
             <HamburgerMenu />
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={resetFlow}
-                variant="outline"
-                className="text-xs px-3 py-2 h-8 rounded-full border-gray-300 text-gray-600"
-              >
-                Hacer nueva oferta
-              </Button>
-            </div>
             <Button 
               onClick={() => setShowExitDialog(true)}
               variant="ghost"
