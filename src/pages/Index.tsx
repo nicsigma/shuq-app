@@ -372,7 +372,44 @@ const ShuQApp = () => {
         </div>;
     }
 
-    // Rejected - with new tip copy
+    // Rejected - check if no attempts remaining
+    if (attemptsRemaining === 0) {
+      return <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
+          <div className="max-w-md mx-auto w-full">
+            {/* Header with Menu and Exit */}
+            <div className="flex justify-between items-center mb-4">
+              <HamburgerMenu />
+              <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
+                <X size={24} />
+              </Button>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-center text-center px-4">
+              {/* Sad emoji */}
+              <div className="text-6xl mb-6">☹</div>
+              
+              <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
+              
+              <p className="text-gray-600 text-sm mb-8">
+                Pero te regalamos un descuento para no irte con las manos vacías.
+              </p>
+
+              <div className="space-y-4 w-full">
+                <Button onClick={resetFlow} className="w-full bg-purple-600 text-white rounded-2xl py-4">
+                  Hacer Otra oferta
+                </Button>
+                <Button onClick={() => setCurrentScreen('onboarding')} variant="outline" className="w-full rounded-2xl py-4 border-purple-600 text-purple-600">
+                  Salir
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
+        </div>;
+    }
+
+    // Rejected - with attempts remaining
     return <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
         <div className="max-w-md mx-auto w-full">
           {/* Header with Menu and Exit */}
