@@ -31,7 +31,7 @@ interface Coupon {
   productName: string;
   offeredPrice: number;
   expiresAt: Date;
-  type: 'accepted' | 'fallback' | 'second';
+  type: 'accepted';
   code: string;
 }
 
@@ -43,15 +43,13 @@ const SAMPLE_PRODUCT: Product = {
 };
 
 const ShuQApp = () => {
-  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'checkout' | 'camera'>('loader');
+  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'camera'>('loader');
   const [selectedProduct] = useState<Product>(SAMPLE_PRODUCT);
   const [offerPrice, setOfferPrice] = useState<number>(75000);
   const [attemptsRemaining, setAttemptsRemaining] = useState<number>(3);
-  const [lastOfferResult, setLastOfferResult] = useState<'accepted' | 'rejected' | 'fallback' | null>(null);
+  const [lastOfferResult, setLastOfferResult] = useState<'accepted' | 'rejected' | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [showSecondProduct, setShowSecondProduct] = useState<boolean>(false);
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
-  const [showContinueDialog, setShowContinueDialog] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   // Auto-transition from loader to onboarding after 3 seconds
@@ -110,26 +108,10 @@ const ShuQApp = () => {
       };
       saveCoupons([...coupons, newCoupon]);
       setLastOfferResult('accepted');
-      setShowSecondProduct(true);
     } else {
       const newAttempts = attemptsRemaining - 1;
       setAttemptsRemaining(newAttempts);
-      
-      if (newAttempts === 0) {
-        // Fallback offer
-        const fallbackCoupon: Coupon = {
-          id: Date.now().toString(),
-          productName: selectedProduct.name,
-          offeredPrice: selectedProduct.price * 0.85,
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-          type: 'fallback',
-          code: generateCode()
-        };
-        saveCoupons([...coupons, fallbackCoupon]);
-        setLastOfferResult('fallback');
-      } else {
-        setLastOfferResult('rejected');
-      }
+      setLastOfferResult('rejected');
     }
     setCurrentScreen('result');
   };
@@ -138,26 +120,12 @@ const ShuQApp = () => {
     setOfferPrice(75000);
     setAttemptsRemaining(3);
     setLastOfferResult(null);
-    setShowSecondProduct(false);
     setCurrentScreen('onboarding');
   };
 
   const handleExit = () => {
     setShowExitDialog(false);
     resetFlow();
-  };
-
-  const handleAddSecondProduct = () => {
-    const secondProductCoupon: Coupon = {
-      id: Date.now().toString(),
-      productName: 'Producto Adicional (20% OFF)',
-      offeredPrice: 12000,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-      type: 'second',
-      code: generateCode()
-    };
-    saveCoupons([...coupons, secondProductCoupon]);
-    setCurrentScreen('coupons');
   };
 
   const TimeDisplay = ({ expiresAt }: { expiresAt: Date }) => {
@@ -190,20 +158,6 @@ const ShuQApp = () => {
         </span>
       </div>
     );
-  };
-
-  const handleContinueWithPurchase = () => {
-    setShowContinueDialog(true);
-  };
-
-  const handleContinueDialogYes = () => {
-    setShowContinueDialog(false);
-    resetFlow();
-  };
-
-  const handleContinueDialogNo = () => {
-    setShowContinueDialog(false);
-    setCurrentScreen('coupons');
   };
 
   const HamburgerMenu = () => (
@@ -491,29 +445,26 @@ const ShuQApp = () => {
               </div>
 
               {/* Promotional message - smaller and lower */}
-              <div className="text-center mb-8">
-                <p className="text-sm font-semibold mb-1">Hoy estás de suerte</p>
-                <p className="text-sm text-gray-600">
+              <div className="text-center mb-8 text-sm">
+                <p className="font-semibold mb-1 text-gray-600">Hoy estás de suerte</p>
+                <p className="text-gray-500">
                   Te ganaste un 20% OFF en otra prenda. ¡Escaneá para elegirla!
                 </p>
               </div>
 
               <div className="space-y-4 w-full">
                 <Button 
-                  onClick={() => {
-                    setShowSecondProduct(false);
-                    resetFlow();
-                  }}
+                  onClick={resetFlow}
                   className="w-full bg-purple-600 text-white rounded-2xl py-4"
                 >
-                  Escanear nueva prenda
+                  Hacer otra oferta
                 </Button>
                 <Button 
-                  onClick={handleContinueWithPurchase}
+                  onClick={() => setCurrentScreen('coupons')}
                   variant="outline"
                   className="w-full rounded-2xl py-4 border-purple-600 text-purple-600"
                 >
-                  Continuar con mi compra
+                  Ver mis ofertas
                 </Button>
               </div>
             </div>
@@ -524,78 +475,11 @@ const ShuQApp = () => {
             onClose={() => setShowExitDialog(false)}
             onConfirm={handleExit}
           />
-
-          <AlertDialog open={showContinueDialog} onOpenChange={setShowContinueDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  ¿Querés hacer otra oferta antes de pagar?
-                </AlertDialogTitle>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={handleContinueDialogNo}>
-                  No
-                </AlertDialogCancel>
-                <AlertDialogAction onClick={handleContinueDialogYes}>
-                  Sí
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       );
     }
 
-    if (lastOfferResult === 'fallback') {
-      return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-          <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu and Exit */}
-            <div className="flex justify-between items-center mb-4">
-              <HamburgerMenu />
-              <Button 
-                onClick={() => setShowExitDialog(true)}
-                variant="ghost"
-                className="p-2"
-              >
-                <X size={24} />
-              </Button>
-            </div>
-
-            <div className="flex-1 flex flex-col justify-center text-center px-4">
-              {/* Minimalist sad emoji */}
-              <div className="text-6xl mb-6">☹</div>
-              
-              <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
-              <p className="text-gray-600 mb-6">
-                Pero te regalamos un descuento para no irte con las manos vacías
-              </p>
-
-              <Card className="p-6 rounded-2xl mb-6 bg-blue-50">
-                <h3 className="font-bold mb-3">OFERTA ESPECIAL</h3>
-                <p className="text-lg mb-1">15% OFF en {selectedProduct?.name}</p>
-                <p className="text-sm text-gray-600">Válido por 30 minutos</p>
-              </Card>
-
-              <Button 
-                onClick={() => setCurrentScreen('coupons')}
-                className="w-full bg-purple-600 text-white rounded-2xl py-4"
-              >
-                Aceptar descuento
-              </Button>
-            </div>
-          </div>
-
-          <ConfirmExitDialog 
-            open={showExitDialog}
-            onClose={() => setShowExitDialog(false)}
-            onConfirm={handleExit}
-          />
-        </div>
-      );
-    }
-
-    // Rejected
+    // Rejected - with new tip copy
     return (
       <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
         <div className="max-w-md mx-auto w-full">
@@ -617,13 +501,13 @@ const ShuQApp = () => {
             
             <h1 className="text-xl font-bold mb-4">No pudimos aceptar esa oferta</h1>
             
-            {/* Centered tip in lilac color */}
+            {/* Updated tip copy */}
             <div className="text-center mb-6">
               <p className="text-sm" style={{ color: '#D5B4F7' }}>
                 <span className="font-semibold">#Tip</span>
               </p>
               <p className="text-gray-600 text-sm">
-                Una buena oferta no siempre es la más baja
+                Probá subir un poquito tu oferta: a veces, un pequeño ajuste hace toda la diferencia.
               </p>
             </div>
             
@@ -649,23 +533,25 @@ const ShuQApp = () => {
     );
   }
 
-  // Coupons Screen
+  // Coupons Screen - removed "Hacer nueva oferta" button and made codes bigger
   if (currentScreen === 'coupons') {
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
     
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto pb-24">
+      <div className="min-h-screen bg-white p-4 font-roboto">
         <div className="max-w-md mx-auto">
-          {/* Header with Menu, New Offer button and Exit */}
+          {/* Header with Menu and Exit - removed the "Hacer nueva oferta" button */}
           <div className="flex justify-between items-center mb-4">
             <HamburgerMenu />
-            <Button 
-              onClick={resetFlow}
-              variant="outline"
-              className="text-xs px-3 py-2 h-8 rounded-full border-gray-300 text-gray-600"
-            >
-              Hacer nueva oferta
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={resetFlow}
+                variant="outline"
+                className="text-xs px-3 py-2 h-8 rounded-full border-gray-300 text-gray-600"
+              >
+                Hacer nueva oferta
+              </Button>
+            </div>
             <Button 
               onClick={() => setShowExitDialog(true)}
               variant="ghost"
@@ -691,120 +577,44 @@ const ShuQApp = () => {
               </Button>
             </div>
           ) : (
-            <>
-              <div className="space-y-4 mb-6">
-                {activeCoupons.map((coupon) => (
-                  <Card key={coupon.id} className="p-4 rounded-2xl">
-                    <div className="flex items-center gap-4">
-                      {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img 
-                          src={selectedProduct.image} 
-                          alt={coupon.productName}
-                          className="w-full h-full object-cover object-center"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Product Info */}
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-sm">{coupon.productName}</h3>
-                        <p className="text-lg font-bold text-green-600">
-                          ${coupon.offeredPrice.toLocaleString()}
-                        </p>
-                        <div className="mt-1">
-                          <TimeDisplay expiresAt={coupon.expiresAt} />
-                        </div>
-                      </div>
-                      
-                      {/* Code Section */}
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500 mb-1">Código</p>
-                        <p className="font-mono font-bold text-sm">{coupon.code}</p>
+            <div className="space-y-4 mb-6">
+              {activeCoupons.map((coupon) => (
+                <Card key={coupon.id} className="p-4 rounded-2xl">
+                  <div className="flex items-center gap-4">
+                    {/* Product Image */}
+                    <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <img 
+                        src={selectedProduct.image} 
+                        alt={coupon.productName}
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm">{coupon.productName}</h3>
+                      <p className="text-lg font-bold text-green-600">
+                        ${coupon.offeredPrice.toLocaleString()}
+                      </p>
+                      <div className="mt-1">
+                        <TimeDisplay expiresAt={coupon.expiresAt} />
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Fixed CTA Button - only show if there are active coupons */}
-        {activeCoupons.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
-            <div className="max-w-md mx-auto">
-              <Button 
-                onClick={() => setCurrentScreen('checkout')}
-                className="w-full bg-purple-600 text-white rounded-2xl py-4"
-              >
-                Ver todos los códigos
-              </Button>
+                    
+                    {/* Code Section - Made bigger */}
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 mb-1">Código</p>
+                      <p className="font-mono font-bold text-lg">{coupon.code}</p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
-          </div>
-        )}
-
-        <ConfirmExitDialog 
-          open={showExitDialog}
-          onClose={() => setShowExitDialog(false)}
-          onConfirm={handleExit}
-        />
-      </div>
-    );
-  }
-
-  // Checkout Screen
-  if (currentScreen === 'checkout') {
-    const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
-    
-    return (
-      <div className="min-h-screen bg-black text-white p-4 font-roboto pb-24">
-        <div className="max-w-md mx-auto">
-          {/* Exit Button */}
-          <div className="flex justify-end mb-4">
-            <Button 
-              onClick={() => setShowExitDialog(true)}
-              variant="ghost"
-              className="p-2 text-white hover:bg-white/10"
-            >
-              <X size={24} />
-            </Button>
-          </div>
-
-          <h1 className="text-2xl font-bold mb-8 text-center">Mostrá en caja tus ofertas</h1>
-          
-          <div className="space-y-6">
-            {activeCoupons.map((coupon) => (
-              <Card key={coupon.id} className="p-6 rounded-2xl bg-white text-black">
-                <h2 className="text-xl font-bold mb-2">{coupon.productName}</h2>
-                <p className="text-2xl font-bold text-green-600 mb-4">
-                  ${coupon.offeredPrice.toLocaleString()}
-                </p>
-                <div className="bg-gray-100 p-4 rounded-xl mb-4">
-                  <p className="text-4xl font-mono font-bold text-center">{coupon.code}</p>
-                </div>
-                <div className="flex justify-center">
-                  <TimeDisplay expiresAt={coupon.expiresAt} />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Fixed CTA Button */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-black">
-          <div className="max-w-md mx-auto">
-            <Button 
-              onClick={() => setCurrentScreen('coupons')}
-              className="w-full rounded-2xl py-4 text-black font-medium"
-              style={{ backgroundColor: '#B5FFA3' }}
-            >
-              Volver a ofertas
-            </Button>
-          </div>
+          )}
         </div>
 
         <ConfirmExitDialog 
