@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { X, ShoppingBag, Clock, CheckCircle, Menu, Camera, Receipt } from 'lucide-react';
+import { X, ShoppingBag, Clock, CheckCircle, Menu, Camera, Receipt, Percent } from 'lucide-react';
 import { ConfirmExitDialog } from '@/components/ConfirmExitDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -580,23 +580,20 @@ const ShuQApp = () => {
           ) : (
             <div className="space-y-4 mb-6">
               {activeCoupons.map(coupon => {
-                // Special discount coupon styling
+                // Special discount coupon styling - more subtle
                 if (coupon.type === 'special-discount') {
                   return (
-                    <Card key={coupon.id} className="p-4 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50">
+                    <Card key={coupon.id} className="p-4 rounded-2xl border border-gray-200 bg-gray-50">
                       <div className="flex items-center gap-4">
-                        {/* Special discount icon */}
-                        <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <span className="text-2xl">🎁</span>
+                        {/* Discount icon - more subtle */}
+                        <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Percent size={24} className="text-gray-600" />
                         </div>
                         
                         {/* Product Info */}
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full font-bold">ESPECIAL</span>
-                          </div>
                           <h3 className="font-semibold text-sm">{coupon.productName}</h3>
-                          <p className="text-lg font-bold text-purple-600">
+                          <p className="text-lg font-bold text-gray-700">
                             {coupon.discountPercentage}% OFF
                           </p>
                           <div className="mt-1">
