@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { X, ShoppingBag, Clock, CheckCircle } from 'lucide-react';
+import { X, ShoppingBag, Clock, CheckCircle, Menu, Camera, Receipt } from 'lucide-react';
 import { ConfirmExitDialog } from '@/components/ConfirmExitDialog';
 import {
   AlertDialog,
@@ -13,6 +13,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface Product {
   id: string;
@@ -38,7 +43,7 @@ const SAMPLE_PRODUCT: Product = {
 };
 
 const ShuQApp = () => {
-  const [currentScreen, setCurrentScreen] = useState<'splash' | 'offer' | 'result' | 'coupons' | 'checkout'>('splash');
+  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'checkout' | 'camera'>('loader');
   const [selectedProduct] = useState<Product>(SAMPLE_PRODUCT);
   const [offerPrice, setOfferPrice] = useState<number>(75000);
   const [attemptsRemaining, setAttemptsRemaining] = useState<number>(3);
@@ -47,6 +52,17 @@ const ShuQApp = () => {
   const [showSecondProduct, setShowSecondProduct] = useState<boolean>(false);
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
   const [showContinueDialog, setShowContinueDialog] = useState<boolean>(false);
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+
+  // Auto-transition from loader to onboarding after 3 seconds
+  useEffect(() => {
+    if (currentScreen === 'loader') {
+      const timer = setTimeout(() => {
+        setCurrentScreen('onboarding');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentScreen]);
 
   useEffect(() => {
     const savedCoupons = localStorage.getItem('shuq-coupons');
@@ -123,7 +139,7 @@ const ShuQApp = () => {
     setAttemptsRemaining(3);
     setLastOfferResult(null);
     setShowSecondProduct(false);
-    setCurrentScreen('splash');
+    setCurrentScreen('onboarding');
   };
 
   const handleExit = () => {
@@ -190,21 +206,144 @@ const ShuQApp = () => {
     setCurrentScreen('coupons');
   };
 
-  // Splash Screen
-  if (currentScreen === 'splash') {
+  const HamburgerMenu = () => (
+    <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" className="p-2">
+          <Menu size={24} />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-80">
+        <div className="flex flex-col gap-4 mt-8">
+          <Button
+            onClick={() => {
+              setCurrentScreen('coupons');
+              setIsMenuOpen(false);
+            }}
+            variant="ghost"
+            className="flex items-center gap-3 justify-start p-4 h-auto"
+          >
+            <Receipt size={20} />
+            <span className="text-lg">Mis ofertas</span>
+          </Button>
+          <Button
+            onClick={() => {
+              setCurrentScreen('camera');
+              setIsMenuOpen(false);
+            }}
+            variant="ghost"
+            className="flex items-center gap-3 justify-start p-4 h-auto"
+          >
+            <Camera size={20} />
+            <span className="text-lg">Escanear nuevo producto</span>
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+
+  // Loader Screen
+  if (currentScreen === 'loader') {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
         <div className="text-center w-full max-w-md mx-auto">
-          <h1 className="text-4xl font-bold mb-4">ShuQ</h1>
-          <p className="text-xl text-gray-600 mb-8">Vos elegís la prenda... Y el precio ;)</p>
-          <Button 
-            onClick={() => setCurrentScreen('offer')}
-            className="w-full px-8 py-4 text-lg rounded-2xl"
-            style={{ backgroundColor: '#B5FFA3', color: '#000' }}
-          >
-            Comenzar
-          </Button>
+          <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
+          <p className="text-xl text-gray-600">Elegí la prenda… y el precio.</p>
         </div>
+      </div>
+    );
+  }
+
+  // Onboarding Screen
+  if (currentScreen === 'onboarding') {
+    return (
+      <div className="min-h-screen bg-white p-4 font-roboto">
+        <div className="max-w-md mx-auto">
+          {/* Header with Menu and Title */}
+          <div className="flex justify-between items-center mb-8">
+            <HamburgerMenu />
+            <h1 className="text-lg font-semibold">ShuQ</h1>
+            <div className="w-10"></div> {/* Spacer for centering */}
+          </div>
+
+          {/* Main Content */}
+          <div className="flex flex-col justify-center text-center px-4 mt-16">
+            <h2 className="text-3xl font-bold mb-8">¿Cómo funciona?</h2>
+            
+            <div className="space-y-6 mb-12 text-left">
+              <div className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</span>
+                <p className="text-gray-700">Tenés 3 oportunidades para hacer tu mejor oferta.</p>
+              </div>
+              <div className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                <p className="text-gray-700">Para ofertar, usá el slider o ingresá el valor manualmente.</p>
+              </div>
+              <div className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                <p className="text-gray-700">Cuando tengas tu oferta lista, ¡enviala!</p>
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => setCurrentScreen('offer')}
+              className="w-full px-8 py-4 text-lg rounded-2xl"
+              style={{ backgroundColor: '#B5FFA3', color: '#000' }}
+            >
+              ¡Empecemos!
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Camera Screen
+  if (currentScreen === 'camera') {
+    return (
+      <div className="min-h-screen bg-white p-4 font-roboto">
+        <div className="max-w-md mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <HamburgerMenu />
+            <h1 className="text-lg font-semibold">ShuQ</h1>
+            <Button 
+              onClick={() => setShowExitDialog(true)}
+              variant="ghost"
+              className="p-2"
+            >
+              <X size={24} />
+            </Button>
+          </div>
+
+          <div className="flex flex-col justify-center text-center px-4 mt-16">
+            <Camera size={80} className="mx-auto mb-8 text-gray-400" />
+            <h2 className="text-2xl font-bold mb-4">Escaneá el código QR</h2>
+            <p className="text-gray-600 mb-8">Apuntá la cámara al código QR de la prenda que querés ofertar</p>
+            
+            <Button 
+              onClick={() => setCurrentScreen('offer')}
+              className="w-full px-8 py-4 text-lg rounded-2xl mb-4"
+              style={{ backgroundColor: '#B5FFA3', color: '#000' }}
+            >
+              Simular escaneo
+            </Button>
+            
+            <Button 
+              onClick={() => setCurrentScreen('onboarding')}
+              variant="outline"
+              className="w-full rounded-2xl py-4"
+            >
+              Volver
+            </Button>
+          </div>
+        </div>
+
+        <ConfirmExitDialog 
+          open={showExitDialog}
+          onClose={() => setShowExitDialog(false)}
+          onConfirm={handleExit}
+        />
       </div>
     );
   }
@@ -216,8 +355,9 @@ const ShuQApp = () => {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto">
         <div className="max-w-md mx-auto">
-          {/* Exit Button */}
-          <div className="flex justify-end mb-4">
+          {/* Header with Menu and Exit */}
+          <div className="flex justify-between items-center mb-4">
+            <HamburgerMenu />
             <Button 
               onClick={() => setShowExitDialog(true)}
               variant="ghost"
@@ -311,6 +451,7 @@ const ShuQApp = () => {
     );
   }
 
+  // Result screens
   if (currentScreen === 'result') {
     if (lastOfferResult === 'accepted') {
       const acceptedCoupon = coupons[coupons.length - 1]; // Get the most recent coupon
@@ -318,8 +459,9 @@ const ShuQApp = () => {
       return (
         <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
           <div className="max-w-md mx-auto w-full">
-            {/* Exit Button */}
-            <div className="flex justify-end mb-4">
+            {/* Header with Menu and Exit */}
+            <div className="flex justify-between items-center mb-4">
+              <HamburgerMenu />
               <Button 
                 onClick={() => setShowExitDialog(true)}
                 variant="ghost"
@@ -408,8 +550,9 @@ const ShuQApp = () => {
       return (
         <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
           <div className="max-w-md mx-auto w-full">
-            {/* Exit Button */}
-            <div className="flex justify-end mb-4">
+            {/* Header with Menu and Exit */}
+            <div className="flex justify-between items-center mb-4">
+              <HamburgerMenu />
               <Button 
                 onClick={() => setShowExitDialog(true)}
                 variant="ghost"
@@ -456,8 +599,9 @@ const ShuQApp = () => {
     return (
       <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
         <div className="max-w-md mx-auto w-full">
-          {/* Exit Button */}
-          <div className="flex justify-end mb-4">
+          {/* Header with Menu and Exit */}
+          <div className="flex justify-between items-center mb-4">
+            <HamburgerMenu />
             <Button 
               onClick={() => setShowExitDialog(true)}
               variant="ghost"
@@ -512,8 +656,9 @@ const ShuQApp = () => {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto pb-24">
         <div className="max-w-md mx-auto">
-          {/* Header with Exit and New Offer buttons */}
+          {/* Header with Menu, New Offer button and Exit */}
           <div className="flex justify-between items-center mb-4">
+            <HamburgerMenu />
             <Button 
               onClick={resetFlow}
               variant="outline"
