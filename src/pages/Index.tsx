@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   isOfferExpired,
   OfferLog
 } from '@/lib/offerLogs';
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 // Image component with proper error handling
 const ProductImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
@@ -82,6 +83,12 @@ const ShuQApp = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  
+  // QR Scanner state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
 
   // Reset state when route changes and load product(s) from database
   useEffect(() => {
@@ -364,6 +371,93 @@ const ShuQApp = () => {
     navigate('/');
   };
 
+  // QR Scanner functions
+  const startQRScanner = async () => {
+    try {
+      setIsScanning(true);
+      setScanError(null);
+      
+      if (!codeReaderRef.current) {
+        codeReaderRef.current = new BrowserMultiFormatReader();
+      }
+
+      const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
+      
+      if (videoInputDevices.length === 0) {
+        throw new Error('No se encontraron cámaras disponibles');
+      }
+
+      // Use the first available camera (usually back camera on mobile)
+      const selectedDeviceId = videoInputDevices[0].deviceId;
+
+      await codeReaderRef.current.decodeFromVideoDevice(
+        selectedDeviceId,
+        videoRef.current!,
+        (result, error) => {
+          if (result) {
+            // QR code successfully scanned
+            const scannedText = result.getText();
+            console.log('QR Code scanned:', scannedText);
+            
+            // Stop scanning
+            stopQRScanner();
+            
+            // Try to extract SKU from the scanned QR code
+            handleQRResult(scannedText);
+          }
+          
+          if (error && error.name !== 'NotFoundException') {
+            console.error('QR Scanner error:', error);
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error starting QR scanner:', error);
+      setScanError(error instanceof Error ? error.message : 'Error al iniciar la cámara');
+      setIsScanning(false);
+    }
+  };
+
+  const stopQRScanner = () => {
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+    }
+    setIsScanning(false);
+  };
+
+  const handleQRResult = (scannedText: string) => {
+    // Try to extract SKU from the scanned QR code
+    // Assuming QR codes contain either just the SKU or a URL with the SKU
+    let extractedSku = scannedText;
+    
+    // If it's a URL, try to extract SKU from it
+    if (scannedText.includes('/products/')) {
+      const match = scannedText.match(/\/products\/([^/?]+)/);
+      if (match) {
+        extractedSku = match[1];
+      }
+    }
+    
+    // Navigate to the product page
+    navigate(`/products/${extractedSku}?qr=true`);
+  };
+
+  // Cleanup QR scanner when component unmounts or screen changes
+  useEffect(() => {
+    return () => {
+      stopQRScanner();
+    };
+  }, []);
+
+  // Start QR scanner when camera screen is shown
+  useEffect(() => {
+    if (currentScreen === 'camera') {
+      startQRScanner();
+    } else {
+      stopQRScanner();
+    }
+  }, [currentScreen]);
+
   const TimeDisplay = ({
     expiresAt
   }: {
@@ -411,6 +505,31 @@ const ShuQApp = () => {
         <div className="flex flex-col gap-4 mt-8">
           <Button
             onClick={() => {
+              goToHomeProducts();
+              setIsMenuOpen(false);
+            }}
+            variant="ghost"
+            className="flex items-center gap-3 justify-start p-4 h-auto"
+          >
+            <ShoppingBag size={20} />
+            <span className="text-lg">Productos</span>
+          </Button>
+          <Button
+            onClick={() => {
+              setCurrentScreen('camera');
+              setIsMenuOpen(false);
+            }}
+            className="flex items-center gap-3 justify-start p-4 h-auto text-white"
+            style={{
+              backgroundColor: '#B5FFA3',
+              color: '#000'
+            }}
+          >
+            <Camera size={20} />
+            <span className="text-lg">Escanear nuevo producto</span>
+          </Button>
+          <Button
+            onClick={() => {
               setCurrentScreen('coupons');
               setIsMenuOpen(false);
             }}
@@ -419,17 +538,6 @@ const ShuQApp = () => {
           >
             <Receipt size={20} />
             <span className="text-lg">Mis ofertas</span>
-          </Button>
-          <Button
-            onClick={() => {
-              setCurrentScreen('camera');
-              setIsMenuOpen(false);
-            }}
-            variant="ghost"
-            className="flex items-center gap-3 justify-start p-4 h-auto"
-          >
-            <Camera size={20} />
-            <span className="text-lg">Escanear nuevo producto</span>
           </Button>
         </div>
       </SheetContent>
@@ -559,6 +667,21 @@ const ShuQApp = () => {
 
           {/* Main Content */}
           <div className="px-4">
+            {/* QR Scanner Button - Moved to top */}
+            <div className="mb-6">
+              <Button
+                onClick={() => setCurrentScreen('camera')}
+                className="w-full rounded-2xl py-4"
+                style={{
+                  backgroundColor: '#B5FFA3',
+                  color: '#000'
+                }}
+              >
+                <Camera size={20} className="mr-2" />
+                Escanear código QR
+              </Button>
+            </div>
+
             <h2 className="text-2xl font-bold mb-6 text-center">Elegí tu producto</h2>
             
             <div className="space-y-3">
@@ -589,17 +712,6 @@ const ShuQApp = () => {
                 </div>
               ))}
             </div>
-
-            <div className="mt-8 text-center">
-              <Button
-                onClick={() => setCurrentScreen('camera')}
-                variant="outline"
-                className="w-full rounded-2xl py-4"
-              >
-                <Camera size={20} className="mr-2" />
-                Escanear código QR
-              </Button>
-            </div>
           </div>
         </div>
       </div>
@@ -610,52 +722,96 @@ const ShuQApp = () => {
   if (currentScreen === 'camera') {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto h-full">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <HamburgerMenu />
-            <h1 className="text-lg font-semibold">ShuQ</h1>
-            <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
+          <div className="flex justify-between items-center mb-4 relative z-10">
+            <Button 
+              onClick={() => setCurrentScreen('products')} 
+              variant="ghost" 
+              className="p-2"
+            >
               <X size={24} />
             </Button>
+            <h1 className="text-lg font-semibold">Escanear QR</h1>
+            <div className="w-10"></div> {/* Spacer */}
           </div>
 
-          <div className="flex flex-col justify-center text-center px-4 mt-16">
-            <Camera size={80} className="mx-auto mb-8 text-gray-400" />
-            <h2 className="text-2xl font-bold mb-4">Escaneá el código QR</h2>
-            <p className="text-gray-600 mb-8">Apuntá la cámara al código QR de la prenda que querés ofertar</p>
-            
-            <Button
-              onClick={() => {
-                // Force navigation even if we're already on this product
-                window.location.href = '/products/5208GT?qr=true';
-              }}
-              className="w-full px-8 py-4 text-lg rounded-2xl mb-4"
-              style={{
-                backgroundColor: '#B5FFA3',
-                color: '#000'
-              }}
-            >
-              Simular escaneo - Sweater Gris
-            </Button>
-            
-            <Button
-              onClick={() => {
-                // Force navigation even if we're already on this product
-                window.location.href = '/products/5207NE?qr=true';
-              }}
-              className="w-full px-8 py-4 text-lg rounded-2xl mb-4"
-              style={{
-                backgroundColor: '#E5E7EB',
-                color: '#000'
-              }}
-            >
-              Simular escaneo - Sweater Negro
-            </Button>
-            
-            <Button onClick={() => setCurrentScreen('onboarding')} variant="outline" className="w-full rounded-2xl py-4">
-              Volver
-            </Button>
+          {/* Camera Container */}
+          <div className="relative h-full flex flex-col">
+            {/* Video Element */}
+            <div className="flex-1 relative rounded-2xl overflow-hidden bg-gray-100 border-2 border-gray-200">
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                autoPlay
+                playsInline
+                muted
+              />
+              
+              {/* Scanning Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-64 h-64 border-2 border-purple-600 border-dashed rounded-2xl flex items-center justify-center">
+                  <div className="text-gray-600 text-center">
+                    <Camera size={48} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm opacity-75">Apuntá al código QR</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Messages */}
+              {scanError && (
+                <div className="absolute top-4 left-4 right-4 bg-red-500 text-white p-3 rounded-lg text-center">
+                  {scanError}
+                </div>
+              )}
+              
+              {isScanning && (
+                <div className="absolute bottom-4 left-4 right-4 bg-purple-600 text-white p-2 rounded-lg text-center">
+                  Buscando código QR...
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="mt-4 space-y-3">
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-2">Escaneá el código QR</h2>
+                <p className="text-gray-600 text-sm">Apuntá la cámara al código QR de la prenda</p>
+              </div>
+              
+              {/* Test Buttons for Development */}
+              <div className="space-y-2">
+                <Button
+                  onClick={() => handleQRResult('5245NE')}
+                  className="w-full px-4 py-3 text-sm rounded-xl"
+                  style={{
+                    backgroundColor: '#B5FFA3',
+                    color: '#000'
+                  }}
+                >
+                  🧪 Simular: SWEATER MOKA NEGRO
+                </Button>
+                
+                <Button
+                  onClick={() => handleQRResult('6604VIYMLNE')}
+                  className="w-full px-4 py-3 text-sm rounded-xl"
+                  style={{
+                    backgroundColor: '#E5E7EB',
+                    color: '#000'
+                  }}
+                >
+                  🧪 Simular: BUZO ESPRESSO NEGRO
+                </Button>
+              </div>
+              
+              <Button 
+                onClick={() => setCurrentScreen('products')} 
+                variant="outline" 
+                className="w-full rounded-xl py-3 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+              >
+                Volver
+              </Button>
+            </div>
           </div>
         </div>
 
