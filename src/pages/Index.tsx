@@ -91,6 +91,7 @@ const ShuQApp = () => {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Reset state when route changes and load product(s) from database
   useEffect(() => {
@@ -411,6 +412,20 @@ const ShuQApp = () => {
       // Use the first available camera (usually back camera on mobile)
       const selectedDeviceId = videoInputDevices[0].deviceId;
 
+      // Set back camera preference
+      if (videoRef.current) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+          });
+          streamRef.current = stream;
+          videoRef.current.srcObject = stream;
+        } catch (cameraError) {
+          console.error('Error accessing camera:', cameraError);
+          throw new Error('No se pudo acceder a la cámara. Verifica los permisos.');
+        }
+      }
+
       await codeReaderRef.current.decodeFromVideoDevice(
         selectedDeviceId,
         videoRef.current!,
@@ -443,6 +458,17 @@ const ShuQApp = () => {
     if (codeReaderRef.current) {
       codeReaderRef.current.reset();
     }
+    
+    // Stop camera stream to free up camera
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
     setIsScanning(false);
   };
 
