@@ -403,16 +403,7 @@ const ShuQApp = () => {
         codeReaderRef.current = new BrowserMultiFormatReader();
       }
 
-      const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
-      
-      if (videoInputDevices.length === 0) {
-        throw new Error('No se encontraron cámaras disponibles');
-      }
-
-      // Use the first available camera (usually back camera on mobile)
-      const selectedDeviceId = videoInputDevices[0].deviceId;
-
-      // Set back camera preference
+      // Set back camera preference directly without device enumeration
       if (videoRef.current) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
@@ -427,7 +418,7 @@ const ShuQApp = () => {
       }
 
       await codeReaderRef.current.decodeFromVideoDevice(
-        selectedDeviceId,
+        undefined, // Let it use the stream we already set
         videoRef.current!,
         (result, error) => {
           if (result) {
@@ -789,7 +780,7 @@ const ShuQApp = () => {
           {/* Camera Container */}
           <div className="relative h-full flex flex-col">
             {/* Video Element */}
-            <div className="flex-1 relative rounded-2xl overflow-hidden bg-gray-100 border-2 border-gray-200">
+            <div className="flex-1 relative rounded-3xl overflow-hidden bg-black">
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
@@ -798,25 +789,37 @@ const ShuQApp = () => {
                 muted
               />
               
-              {/* Scanning Overlay */}
+              {/* Minimalist Scanning Overlay */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-64 h-64 border-2 border-purple-600 border-dashed rounded-2xl flex items-center justify-center">
-                  <div className="text-gray-600 text-center">
-                    <Camera size={48} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm opacity-75">Apuntá al código QR</p>
+                {/* Corner brackets only */}
+                <div className="relative w-56 h-56">
+                  {/* Top-left corner */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-sm"></div>
+                  {/* Top-right corner */}
+                  <div className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-sm"></div>
+                  {/* Bottom-left corner */}
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-sm"></div>
+                  {/* Bottom-right corner */}
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-sm"></div>
+                  
+                  {/* Center hint text */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                      Apuntá al código QR
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Status Messages */}
               {scanError && (
-                <div className="absolute top-4 left-4 right-4 bg-red-500 text-white p-3 rounded-lg text-center">
+                <div className="absolute top-6 left-6 right-6 bg-red-500 text-white p-4 rounded-2xl text-center font-medium">
                   {scanError}
                 </div>
               )}
               
               {isScanning && (
-                <div className="absolute bottom-4 left-4 right-4 bg-purple-600 text-white p-2 rounded-lg text-center">
+                <div className="absolute bottom-6 left-6 right-6 bg-white bg-opacity-90 text-gray-800 p-3 rounded-2xl text-center font-medium">
                   Buscando código QR...
                 </div>
               )}
