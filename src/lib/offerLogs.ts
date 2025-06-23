@@ -6,6 +6,7 @@ export type OfferLogUpdate = Database['public']['Tables']['offer_logs']['Update'
 
 // Session management utilities
 const SESSION_KEY = 'shuq-session-id'
+const ONBOARDING_SEEN_KEY = 'shuq-onboarding-seen'
 
 export const getSessionId = (): string => {
   let sessionId = localStorage.getItem(SESSION_KEY)
@@ -14,6 +15,16 @@ export const getSessionId = (): string => {
     localStorage.setItem(SESSION_KEY, sessionId)
   }
   return sessionId
+}
+
+// Check if user has seen onboarding before
+export const hasSeenOnboarding = (): boolean => {
+  return localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true'
+}
+
+// Mark onboarding as seen
+export const markOnboardingSeen = (): void => {
+  localStorage.setItem(ONBOARDING_SEEN_KEY, 'true')
 }
 
 // Generate unique acceptance code

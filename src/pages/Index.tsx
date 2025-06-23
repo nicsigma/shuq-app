@@ -15,6 +15,8 @@ import {
   unsubscribeFromOfferLogs,
   transformOfferLogToCoupon,
   isOfferExpired,
+  hasSeenOnboarding,
+  markOnboardingSeen,
   OfferLog
 } from '@/lib/offerLogs';
 import { BrowserMultiFormatReader } from '@zxing/library';
@@ -147,18 +149,28 @@ const ShuQApp = () => {
     loadData();
   }, [sku, navigate]);
 
-  // Auto-transition from loader after 3 seconds
+  // Auto-transition from loader
   useEffect(() => {
     if (currentScreen === 'loader' && !isLoadingProduct) {
+      // Determine timing based on user type
+      const isFirstTime = sku && selectedProduct && !hasSeenOnboarding();
+      const loaderTime = isFirstTime ? 3000 : 1500; // 3s for first-time, 1.5s for returning users
+      
       const timer = setTimeout(() => {
         if (sku && selectedProduct) {
-          // Product page - go to onboarding
-          setCurrentScreen('onboarding');
+          // Product page - check if first-time user
+          if (hasSeenOnboarding()) {
+            // Returning user - go directly to offer
+            setCurrentScreen('offer');
+          } else {
+            // First-time user - show onboarding
+            setCurrentScreen('onboarding');
+          }
         } else if (!sku && allProducts.length > 0) {
           // Home page - go to products list
           setCurrentScreen('products');
         }
-      }, 3000);
+      }, loaderTime);
       return () => clearTimeout(timer);
     }
   }, [currentScreen, selectedProduct, allProducts, isLoadingProduct, sku]);
@@ -359,6 +371,15 @@ const ShuQApp = () => {
   };
 
   const goToHomeProducts = () => {
+    // Reset all state to ensure clean navigation to products list
+    setSelectedProduct(null);
+    setCurrentScreen('products');
+    setProductError(null);
+    setOfferPrice(75000);
+    setAttemptsRemaining(3);
+    setLastOfferResult(null);
+    
+    // Navigate to root route
     navigate('/');
   };
 
@@ -512,7 +533,7 @@ const ShuQApp = () => {
             className="flex items-center gap-3 justify-start p-4 h-auto"
           >
             <ShoppingBag size={20} />
-            <span className="text-lg">Productos</span>
+            <span className="text-lg">Home</span>
           </Button>
           <Button
             onClick={() => {
@@ -638,7 +659,10 @@ const ShuQApp = () => {
             </div>
 
             <Button
-              onClick={() => setCurrentScreen('offer')}
+              onClick={() => {
+                markOnboardingSeen();
+                setCurrentScreen('offer');
+              }}
               className="w-full px-8 py-4 text-lg rounded-2xl"
               style={{
                 backgroundColor: '#B5FFA3',
