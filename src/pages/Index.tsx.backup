@@ -1,46 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { X, ShoppingBag, Clock, CheckCircle, Menu, Camera, Receipt, Percent } from 'lucide-react';
 import { ConfirmExitDialog } from '@/components/ConfirmExitDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { getProductBySku, getAllProducts, subscribeToProductChanges, unsubscribeFromProductChanges } from '@/lib/database';
-import { 
-  createOfferLog, 
-  getAcceptedOffers, 
-  getRemainingAttempts, 
-  subscribeToSessionOfferLogs, 
-  unsubscribeFromOfferLogs,
-  transformOfferLogToCoupon,
-  isOfferExpired,
-  OfferLog
-} from '@/lib/offerLogs';
-
-// Image component with proper error handling
-const ProductImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return (
-      <div className={`${className} flex items-center justify-center bg-gray-100`}>
-        <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd"></path>
-        </svg>
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setHasError(true)}
-    />
-  );
-};
+import { getProductBySku, subscribeToProductChanges, unsubscribeFromProductChanges } from '@/lib/database';
 
 interface Product {
   id: string;
@@ -60,20 +26,24 @@ interface Coupon {
   type: 'accepted' | 'special-discount';
   code: string;
   discountPercentage?: number; // For special discount coupons
-  productImage?: string; // Store product image URL
 }
 
-
+const SAMPLE_PRODUCT: Product = {
+  id: '1',
+  sku: 'CAMPERA001',
+  name: 'CAMPERA AMERICANO NEGRO',
+  description: 'Campera americana elegante en color negro, perfecta para ocasiones formales.',
+  price: 125000,
+  image: '/lovable-uploads/8d13fdd4-4374-49ac-9e3d-a4898309bd29.png',
+  maxDiscountPercentage: 40
+};
 
 const ShuQApp = () => {
   const { sku } = useParams<{ sku: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isQRSimulation = searchParams.get('qr') === 'true';
   
-  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'camera' | 'products'>('loader');
+  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'camera'>('loader');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoadingProduct, setIsLoadingProduct] = useState<boolean>(false);
   const [productError, setProductError] = useState<string | null>(null);
   const [offerPrice, setOfferPrice] = useState<number>(75000);
@@ -83,20 +53,10 @@ const ShuQApp = () => {
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
-  // Reset state when route changes and load product(s) from database
+  // Load product from database based on SKU
   useEffect(() => {
-    // Reset state when route changes
-    setCurrentScreen('loader');
-    setSelectedProduct(null);
-    setAllProducts([]);
-    setProductError(null);
-    setOfferPrice(75000);
-    setAttemptsRemaining(3);
-    setLastOfferResult(null);
-    
-    const loadData = async () => {
+    const loadProduct = async () => {
       if (sku) {
-        // Load specific product by SKU
         setIsLoadingProduct(true);
         setProductError(null);
         
@@ -117,54 +77,24 @@ const ShuQApp = () => {
           setIsLoadingProduct(false);
         }
       } else {
-        // No SKU provided, load all products for home page
-        setIsLoadingProduct(true);
-        setProductError(null);
-        
-        try {
-          const products = await getAllProducts();
-          setAllProducts(products);
-          
-          if (products.length === 0) {
-            setProductError('No se encontraron productos');
-          }
-        } catch (error) {
-          console.error('Error loading products:', error);
-          setProductError('Error al cargar los productos');
-        } finally {
-          setIsLoadingProduct(false);
-        }
+        // No SKU provided, use sample product for home page
+        setSelectedProduct(SAMPLE_PRODUCT);
+        setOfferPrice(Math.floor(SAMPLE_PRODUCT.price * 0.6));
       }
     };
 
-    loadData();
+    loadProduct();
   }, [sku, navigate]);
 
-  // Auto-transition from loader after 3 seconds
+  // Auto-transition from loader to onboarding after 3 seconds
   useEffect(() => {
-    if (currentScreen === 'loader' && !isLoadingProduct) {
+    if (currentScreen === 'loader' && selectedProduct && !isLoadingProduct) {
       const timer = setTimeout(() => {
-        if (sku && selectedProduct) {
-          // Product page - go to onboarding
-          setCurrentScreen('onboarding');
-        } else if (!sku && allProducts.length > 0) {
-          // Home page - go to products list
-          setCurrentScreen('products');
-        }
+        setCurrentScreen('onboarding');
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [currentScreen, selectedProduct, allProducts, isLoadingProduct, sku]);
-
-  // Auto-advance from onboarding to offer for QR simulations
-  useEffect(() => {
-    if (currentScreen === 'onboarding' && isQRSimulation && selectedProduct && sku) {
-      const timer = setTimeout(() => {
-        setCurrentScreen('offer');
-      }, 2000); // Show onboarding for 2 seconds, then go to offer
-      return () => clearTimeout(timer);
-    }
-  }, [currentScreen, isQRSimulation, selectedProduct, sku]);
+  }, [currentScreen, selectedProduct, isLoadingProduct]);
 
   // Subscribe to product changes for real-time updates
   useEffect(() => {
@@ -191,68 +121,15 @@ const ShuQApp = () => {
     }
   }, [selectedProduct]);
 
-  // Load attempts remaining from database and subscribe to offer log updates
   useEffect(() => {
-    if (selectedProduct) {
-      // Load remaining attempts from database
-      const loadAttempts = async () => {
-        try {
-          const remaining = await getRemainingAttempts(selectedProduct.sku);
-          setAttemptsRemaining(remaining);
-        } catch (error) {
-          console.error('Error loading attempts:', error);
-        }
-      };
-
-      loadAttempts();
-
-      // Subscribe to offer log changes
-      const subscription = subscribeToSessionOfferLogs((payload) => {
-        if (payload.new && payload.new.product_sku === selectedProduct.sku) {
-          // Update attempts remaining if this is a new offer for this product
-          if (payload.eventType === 'INSERT') {
-            setAttemptsRemaining(payload.new.attempts_remaining);
-          }
-        }
-      });
-
-      return () => {
-        unsubscribeFromOfferLogs(subscription);
-      };
+    const savedCoupons = localStorage.getItem('shuq-coupons');
+    if (savedCoupons) {
+      const parsedCoupons = JSON.parse(savedCoupons).map((coupon: any) => ({
+        ...coupon,
+        expiresAt: new Date(coupon.expiresAt)
+      }));
+      setCoupons(parsedCoupons);
     }
-  }, [selectedProduct]);
-
-  // Load accepted offers from database on component mount
-  useEffect(() => {
-    const loadAcceptedOffers = async () => {
-      try {
-        const acceptedOffers = await getAcceptedOffers();
-        const transformedCoupons = acceptedOffers
-          .filter(offer => !isOfferExpired(offer))
-          .map(offer => ({
-            ...transformOfferLogToCoupon(offer),
-            productImage: offer.product_sku ? `/api/products/${offer.product_sku}/image` : undefined
-          }));
-        
-        // Merge with existing localStorage coupons if any
-        const savedCoupons = localStorage.getItem('shuq-coupons');
-        const localCoupons = savedCoupons ? JSON.parse(savedCoupons).map((coupon: any) => ({
-          ...coupon,
-          expiresAt: new Date(coupon.expiresAt)
-        })) : [];
-        
-        // Remove duplicates and combine
-        const allCoupons = [...transformedCoupons, ...localCoupons.filter(
-          (localCoupon: any) => !transformedCoupons.some(dbCoupon => dbCoupon.id === localCoupon.id)
-        )];
-        
-        setCoupons(allCoupons);
-      } catch (error) {
-        console.error('Error loading accepted offers:', error);
-      }
-    };
-
-    loadAcceptedOffers();
   }, []);
 
   const saveCoupons = (newCoupons: Coupon[]) => {
@@ -275,58 +152,28 @@ const ShuQApp = () => {
     return `Tenés ${attemptsRemaining} intentos`;
   };
 
-  const handleSendOffer = async () => {
+  const handleSendOffer = () => {
     if (!selectedProduct) return;
     
     const minAcceptablePrice = selectedProduct.price * (1 - selectedProduct.maxDiscountPercentage / 100);
     const isAccepted = offerPrice >= minAcceptablePrice;
-    const newAttempts = isAccepted ? attemptsRemaining : attemptsRemaining - 1;
     
-    try {
-      // Create offer log in database
-      const offerLog = await createOfferLog({
-        product_sku: selectedProduct.sku,
-        product_name: selectedProduct.name,
-        product_price: selectedProduct.price,
-        product_max_discount_percentage: selectedProduct.maxDiscountPercentage,
-        offered_amount: offerPrice,
-        offer_status: isAccepted ? 'accepted' : 'rejected',
-        attempts_remaining: newAttempts
-      });
-
-      if (isAccepted) {
-        // Convert offer log to coupon format and add to local state
-        const newCoupon = {
-          ...transformOfferLogToCoupon(offerLog),
-          productImage: selectedProduct.image
-        };
-        saveCoupons([...coupons, newCoupon]);
-        setLastOfferResult('accepted');
-      } else {
-        setAttemptsRemaining(newAttempts);
-        setLastOfferResult('rejected');
-      }
-    } catch (error) {
-      console.error('Error saving offer:', error);
-      // Fall back to old behavior if database fails
-      if (isAccepted) {
-        const newCoupon: Coupon = {
-          id: Date.now().toString(),
-          productName: selectedProduct.name,
-          offeredPrice: offerPrice,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-          type: 'accepted',
-          code: generateCode(),
-          productImage: selectedProduct.image
-        };
-        saveCoupons([...coupons, newCoupon]);
-        setLastOfferResult('accepted');
-      } else {
-        setAttemptsRemaining(newAttempts);
-        setLastOfferResult('rejected');
-      }
+    if (isAccepted) {
+      const newCoupon: Coupon = {
+        id: Date.now().toString(),
+        productName: selectedProduct.name,
+        offeredPrice: offerPrice,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+        type: 'accepted',
+        code: generateCode()
+      };
+      saveCoupons([...coupons, newCoupon]);
+      setLastOfferResult('accepted');
+    } else {
+      const newAttempts = attemptsRemaining - 1;
+      setAttemptsRemaining(newAttempts);
+      setLastOfferResult('rejected');
     }
-    
     setCurrentScreen('result');
   };
 
@@ -351,17 +198,9 @@ const ShuQApp = () => {
     setCurrentScreen('onboarding');
   };
 
-  const goToHomeProducts = () => {
-    navigate('/');
-  };
-
   const handleExit = () => {
     setShowExitDialog(false);
-    // If we don't have a specific product (we're on home route), go to products screen
-    if (!sku) {
-      setCurrentScreen('products');
-    }
-    navigate('/');
+    resetFlow();
   };
 
   const TimeDisplay = ({
@@ -436,45 +275,25 @@ const ShuQApp = () => {
     </Sheet>
   );
 
-  // Loading Screen
+  // Loading Product Screen
   if (isLoadingProduct) {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
         <div className="text-center w-full max-w-md mx-auto">
           <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
-          <p className="text-xl text-gray-600">
-            {sku ? 'Cargando producto...' : 'Cargando productos...'}
-          </p>
+          <p className="text-xl text-gray-600">Cargando producto...</p>
         </div>
       </div>
     );
   }
 
-  // Error Screen
-  if (productError) {
+  // Product Error Screen
+  if (productError || !selectedProduct) {
     return (
       <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
         <div className="text-center w-full max-w-md mx-auto">
           <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
-          <p className="text-xl text-red-600 mb-4">{productError}</p>
-          <Button 
-            onClick={() => navigate('/')}
-            className="bg-purple-600 text-white rounded-2xl px-6 py-3"
-          >
-            Volver al inicio
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if we need a specific product but don't have it
-  if (sku && !selectedProduct) {
-    return (
-      <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
-        <div className="text-center w-full max-w-md mx-auto">
-          <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
-          <p className="text-xl text-red-600 mb-4">Producto no encontrado</p>
+          <p className="text-xl text-red-600 mb-4">{productError || 'Producto no encontrado'}</p>
           <Button 
             onClick={() => navigate('/')}
             className="bg-purple-600 text-white rounded-2xl px-6 py-3"
@@ -545,67 +364,6 @@ const ShuQApp = () => {
     );
   }
 
-  // Products List Screen (Home Page)
-  if (currentScreen === 'products') {
-    return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
-        <div className="max-w-md mx-auto">
-          {/* Header with Menu */}
-          <div className="flex justify-between items-center mb-8">
-            <HamburgerMenu />
-            <h1 className="text-lg font-semibold">ShuQ</h1>
-            <div className="w-10"></div> {/* Spacer for centering */}
-          </div>
-
-          {/* Main Content */}
-          <div className="px-4">
-            <h2 className="text-2xl font-bold mb-6 text-center">Elegí tu producto</h2>
-            
-            <div className="space-y-3">
-              {allProducts.map((product) => (
-                <div 
-                  key={product.id} 
-                  className="p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-purple-300 hover:bg-gray-50 transition-all"
-                  onClick={() => navigate(`/products/${product.sku}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <ProductImage
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-base">{product.name}</h3>
-                      <p className="text-gray-600 text-sm">${product.price.toLocaleString()}</p>
-                    </div>
-                    <div className="text-gray-400">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 text-center">
-              <Button
-                onClick={() => setCurrentScreen('camera')}
-                variant="outline"
-                className="w-full rounded-2xl py-4"
-              >
-                <Camera size={20} className="mr-2" />
-                Escanear código QR
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Camera Screen
   if (currentScreen === 'camera') {
     return (
@@ -626,10 +384,7 @@ const ShuQApp = () => {
             <p className="text-gray-600 mb-8">Apuntá la cámara al código QR de la prenda que querés ofertar</p>
             
             <Button
-              onClick={() => {
-                // Force navigation even if we're already on this product
-                window.location.href = '/products/5208GT?qr=true';
-              }}
+              onClick={() => navigate('/products/5208GT')}
               className="w-full px-8 py-4 text-lg rounded-2xl mb-4"
               style={{
                 backgroundColor: '#B5FFA3',
@@ -640,10 +395,7 @@ const ShuQApp = () => {
             </Button>
             
             <Button
-              onClick={() => {
-                // Force navigation even if we're already on this product
-                window.location.href = '/products/5207NE?qr=true';
-              }}
+              onClick={() => navigate('/products/5207NE')}
               className="w-full px-8 py-4 text-lg rounded-2xl mb-4"
               style={{
                 backgroundColor: '#E5E7EB',
@@ -682,10 +434,14 @@ const ShuQApp = () => {
           {/* Product Details */}
           <div className="flex items-start gap-4 mb-6">
             <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-              <ProductImage
+              <img
                 src={selectedProduct.image}
                 alt={selectedProduct.name}
                 className="w-full h-full object-cover object-center"
+                onError={e => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                }}
               />
             </div>
             <div>
@@ -802,8 +558,8 @@ const ShuQApp = () => {
               </div>
 
               <div className="space-y-4 w-full">
-                <Button onClick={goToHomeProducts} className="w-full bg-purple-600 text-white rounded-2xl py-4">
-                  Ver más productos
+                <Button onClick={resetFlow} className="w-full bg-purple-600 text-white rounded-2xl py-4">
+                  Hacer otra oferta
                 </Button>
                 <Button onClick={() => setCurrentScreen('coupons')} variant="outline" className="w-full rounded-2xl py-4 border-purple-600 text-purple-600">
                   Ver mis ofertas
@@ -931,8 +687,8 @@ const ShuQApp = () => {
           {activeCoupons.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">No tenés ofertas aprobadas</p>
-              <Button onClick={goToHomeProducts} className="bg-purple-600 text-white rounded-2xl px-6 py-3">
-                Ver otros productos
+              <Button onClick={resetFlow} className="bg-purple-600 text-white rounded-2xl px-6 py-3">
+                Crear oferta
               </Button>
             </div>
           ) : (
@@ -975,32 +731,15 @@ const ShuQApp = () => {
                     <div className="flex items-center gap-4">
                       {/* Product Image */}
                       <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {(() => {
-                          // Get image URL from coupon or fallback to known product images
-                          let imageUrl = coupon.productImage;
-                          
-                          if (!imageUrl) {
-                            // Fallback to known product images based on product name
-                            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                            if (coupon.productName.includes('SWEATER GAEL GRIS TOPO')) {
-                              imageUrl = `${supabaseUrl}/storage/v1/object/public/products/5208GT.jpg`;
-                            } else if (coupon.productName.includes('SWEATER GAEL NEGRO')) {
-                              imageUrl = `${supabaseUrl}/storage/v1/object/public/products/5207NE.jpg`;
-                            }
-                          }
-                          
-                          return imageUrl ? (
-                            <ProductImage
-                              src={imageUrl}
-                              alt={coupon.productName}
-                              className="w-full h-full object-cover object-center"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center w-full h-full">
-                              <ShoppingBag className="w-6 h-6 text-gray-500" />
-                            </div>
-                          );
-                        })()}
+                        <img
+                          src={selectedProduct.image}
+                          alt={coupon.productName}
+                          className="w-full h-full object-cover object-center"
+                          onError={e => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                          }}
+                        />
                       </div>
                       
                       {/* Product Info */}
