@@ -74,7 +74,7 @@ const ShuQApp = () => {
   const [searchParams] = useSearchParams();
   const isQRSimulation = searchParams.get('qr') === 'true';
   
-  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'camera' | 'products'>('loader');
+  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'camera' | 'products' | 'productsList'>('loader');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoadingProduct, setIsLoadingProduct] = useState<boolean>(false);
@@ -115,7 +115,7 @@ const ShuQApp = () => {
           
           if (product) {
             setSelectedProduct(product);
-            setOfferPrice(Math.floor(product.price * 0.6)); // Set initial offer to 60% of price
+            setOfferPrice(product.price); // Set initial offer to max price
           } else {
             setProductError('Producto no encontrado');
             navigate('/'); // Redirect to home if product not found
@@ -176,15 +176,7 @@ const ShuQApp = () => {
     }
   }, [currentScreen, selectedProduct, allProducts, isLoadingProduct, sku]);
 
-  // Auto-advance from onboarding to offer for QR simulations
-  useEffect(() => {
-    if (currentScreen === 'onboarding' && isQRSimulation && selectedProduct && sku) {
-      const timer = setTimeout(() => {
-        setCurrentScreen('offer');
-      }, 2000); // Show onboarding for 2 seconds, then go to offer
-      return () => clearTimeout(timer);
-    }
-  }, [currentScreen, isQRSimulation, selectedProduct, sku]);
+  // Removed auto-advance from onboarding - users must click "Comenzar" to proceed
 
   // Subscribe to product changes for real-time updates
   useEffect(() => {
@@ -214,17 +206,23 @@ const ShuQApp = () => {
   // Load attempts remaining from database and subscribe to offer log updates
   useEffect(() => {
     if (selectedProduct) {
-      // Load remaining attempts from database
-      const loadAttempts = async () => {
-        try {
-          const remaining = await getRemainingAttempts(selectedProduct.sku);
-          setAttemptsRemaining(remaining);
-        } catch (error) {
-          console.error('Error loading attempts:', error);
-        }
-      };
+      // Only load attempts from database if we're continuing an existing offer session
+      // If this is a fresh start (no lastOfferResult), reset to 3 attempts
+      if (lastOfferResult === null) {
+        setAttemptsRemaining(3);
+      } else {
+        // Load remaining attempts from database only if we're in the middle of an offer flow
+        const loadAttempts = async () => {
+          try {
+            const remaining = await getRemainingAttempts(selectedProduct.sku);
+            setAttemptsRemaining(remaining);
+          } catch (error) {
+            console.error('Error loading attempts:', error);
+          }
+        };
 
-      loadAttempts();
+        loadAttempts();
+      }
 
       // Subscribe to offer log changes
       const subscription = subscribeToSessionOfferLogs((payload) => {
@@ -322,9 +320,11 @@ const ShuQApp = () => {
         };
         saveCoupons([...coupons, newCoupon]);
         setLastOfferResult('accepted');
+        setCurrentScreen('result');
       } else {
         setAttemptsRemaining(newAttempts);
         setLastOfferResult('rejected');
+        setCurrentScreen('result');
       }
     } catch (error) {
       console.error('Error saving offer:', error);
@@ -341,13 +341,13 @@ const ShuQApp = () => {
         };
         saveCoupons([...coupons, newCoupon]);
         setLastOfferResult('accepted');
+        setCurrentScreen('result');
       } else {
         setAttemptsRemaining(newAttempts);
         setLastOfferResult('rejected');
+        setCurrentScreen('result');
       }
     }
-    
-    setCurrentScreen('result');
   };
 
   const handleAcceptSpecialDiscount = () => {
@@ -361,6 +361,14 @@ const ShuQApp = () => {
       discountPercentage: 15
     };
     saveCoupons([...coupons, specialDiscountCoupon]);
+    
+    // Reset the offer flow state
+    setSelectedProduct(null);
+    setOfferPrice(75000);
+    setAttemptsRemaining(3);
+    setLastOfferResult(null);
+    
+    // Navigate to coupons screen
     setCurrentScreen('coupons');
   };
 
@@ -554,6 +562,17 @@ const ShuQApp = () => {
           </Button>
           <Button
             onClick={() => {
+              setCurrentScreen('productsList');
+              setIsMenuOpen(false);
+            }}
+            variant="ghost"
+            className="flex items-center gap-3 justify-start p-4 h-auto"
+          >
+            <ShoppingBag size={20} />
+            <span className="text-lg">Ver productos disponibles</span>
+          </Button>
+          <Button
+            onClick={() => {
               setCurrentScreen('camera');
               setIsMenuOpen(false);
             }}
@@ -585,7 +604,7 @@ const ShuQApp = () => {
   // Loading Screen
   if (isLoadingProduct) {
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
+      <div className="min-h-screen bg-white p-4 font-lexend flex flex-col justify-center items-center">
         <div className="text-center w-full max-w-md mx-auto">
           <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
           <p className="text-xl text-gray-600">
@@ -599,7 +618,7 @@ const ShuQApp = () => {
   // Error Screen
   if (productError) {
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
+      <div className="min-h-screen bg-white p-4 font-lexend flex flex-col justify-center items-center">
         <div className="text-center w-full max-w-md mx-auto">
           <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
           <p className="text-xl text-red-600 mb-4">{productError}</p>
@@ -617,7 +636,7 @@ const ShuQApp = () => {
   // Check if we need a specific product but don't have it
   if (sku && !selectedProduct) {
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
+      <div className="min-h-screen bg-white p-4 font-lexend flex flex-col justify-center items-center">
         <div className="text-center w-full max-w-md mx-auto">
           <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
           <p className="text-xl text-red-600 mb-4">Producto no encontrado</p>
@@ -634,20 +653,99 @@ const ShuQApp = () => {
 
   // Loader Screen
   if (currentScreen === 'loader') {
-    return (
-      <div className="min-h-screen bg-white p-4 font-roboto flex flex-col justify-center items-center">
-        <div className="text-center w-full max-w-md mx-auto">
-          <h1 className="text-5xl font-bold mb-6">ShuQ</h1>
-          <p className="text-xl text-gray-600">Elegí la prenda… y el precio.</p>
+    // Check if this is the first time user (for splash screen)
+    const isFirstTime = sku && selectedProduct && !hasSeenOnboarding();
+    
+    if (isFirstTime) {
+      // Show full splash screen for first-time users
+      return (
+        <div className="min-h-screen font-lexend flex flex-col justify-center items-center relative overflow-hidden"
+             style={{
+               background: 'linear-gradient(180deg, #8B5FBF 0%, #6B46C1 50%, #7C3AED 100%)'
+             }}>
+          <div className="text-center w-full max-w-md mx-auto px-8">
+            {/* ShuQ Logo with Corner Brackets */}
+            <div className="relative mb-16">
+              {/* Corner Brackets - Viewfinder Style */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-48 h-32">
+                  {/* Top-left corner */}
+                  <div className="absolute -top-4 -left-4 w-8 h-8">
+                    <div className="w-6 h-1 bg-green-400 rounded-full"></div>
+                    <div className="w-1 h-6 bg-green-400 rounded-full"></div>
+                  </div>
+                  {/* Top-right corner */}
+                  <div className="absolute -top-4 -right-4 w-8 h-8">
+                    <div className="w-6 h-1 bg-green-400 rounded-full ml-2"></div>
+                    <div className="w-1 h-6 bg-green-400 rounded-full ml-7"></div>
+                  </div>
+                  {/* Bottom-left corner */}
+                  <div className="absolute -bottom-4 -left-4 w-8 h-8">
+                    <div className="w-1 h-6 bg-green-400 rounded-full"></div>
+                    <div className="w-6 h-1 bg-green-400 rounded-full mt-1"></div>
+                  </div>
+                  {/* Bottom-right corner */}
+                  <div className="absolute -bottom-4 -right-4 w-8 h-8">
+                    <div className="w-1 h-6 bg-green-400 rounded-full ml-7"></div>
+                    <div className="w-6 h-1 bg-green-400 rounded-full ml-2 mt-1"></div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* ShuQ Text */}
+              <h1 className="text-7xl font-bold text-white relative z-10 tracking-wide">
+                ShuQ
+              </h1>
+            </div>
+            
+            {/* Tagline */}
+            <div className="space-y-2">
+              <p className="text-3xl font-medium text-white opacity-90">
+                Elegí la prenda...
+              </p>
+              <p className="text-3xl font-bold text-black bg-white bg-opacity-90 px-4 py-2 rounded-2xl inline-block">
+                ¡Y el precio!
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      // Show simple QR icon loader for returning users
+      return (
+        <div className="min-h-screen bg-white font-lexend flex flex-col justify-center items-center">
+          <div className="text-center">
+            {/* QR Code Icon */}
+            <div className="mb-4">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" className="mx-auto text-gray-600">
+                <rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <rect x="5" y="5" width="4" height="4" fill="currentColor"/>
+                <rect x="15" y="5" width="4" height="4" fill="currentColor"/>
+                <rect x="5" y="15" width="4" height="4" fill="currentColor"/>
+                <rect x="13" y="13" width="2" height="2" fill="currentColor"/>
+                <rect x="17" y="13" width="2" height="2" fill="currentColor"/>
+                <rect x="19" y="15" width="2" height="2" fill="currentColor"/>
+                <rect x="15" y="17" width="2" height="2" fill="currentColor"/>
+                <rect x="13" y="19" width="2" height="2" fill="currentColor"/>
+                <rect x="17" y="19" width="2" height="2" fill="currentColor"/>
+                <rect x="19" y="17" width="2" height="2" fill="currentColor"/>
+              </svg>
+            </div>
+            
+            {/* Loading text */}
+            <p className="text-gray-600 text-sm">Cargando...</p>
+          </div>
+        </div>
+      );
+    }
   }
 
   // Onboarding Screen
   if (currentScreen === 'onboarding') {
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
+      <div className="min-h-screen bg-white p-4 font-lexend">
         <div className="max-w-md mx-auto">
           {/* Header with Menu and Title */}
           <div className="flex justify-between items-center mb-8">
@@ -657,21 +755,56 @@ const ShuQApp = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex flex-col justify-center text-center px-4 mt-16">
-            <h2 className="text-3xl font-bold mb-8">¿Cómo funciona?</h2>
+          <div className="flex flex-col px-4 mt-8">
+            <h2 className="text-3xl font-bold mb-8 text-left">¿Cómo funciona?</h2>
             
-            <div className="space-y-6 mb-12 text-left">
-              <div className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</span>
-                <p className="text-gray-700">Tenés 3 oportunidades para hacer tu mejor oferta.</p>
+            <div className="space-y-4 mb-8">
+              {/* Card 1 - Purple */}
+              <div className="flex items-center gap-4 p-6 rounded-3xl" style={{ backgroundColor: '#C4A5F5' }}>
+                {/* Dice/Cube Icon */}
+                <div className="flex-shrink-0">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-gray-800">
+                    <path d="M8 12L16 8L24 12L16 16L8 12Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.3"/>
+                    <path d="M8 12V20L16 24V16L8 12Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.2"/>
+                    <path d="M16 16V24L24 20V12L16 16Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.1"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800 text-lg mb-1">Tenés 3 oportunidades</p>
+                  <p className="font-medium text-gray-700">para hacer tu mejor oferta.</p>
+                </div>
               </div>
-              <div className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</span>
-                <p className="text-gray-700">Para ofertar, usá el slider o ingresá el valor manualmente.</p>
+
+              {/* Card 2 - Light Blue */}
+              <div className="flex items-center gap-4 p-6 rounded-3xl" style={{ backgroundColor: '#B3E5F7' }}>
+                {/* Slider Icon */}
+                <div className="flex-shrink-0">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-gray-800">
+                    <rect x="4" y="14" width="24" height="4" rx="2" fill="currentColor" fillOpacity="0.3"/>
+                    <circle cx="12" cy="16" r="4" fill="currentColor"/>
+                    <rect x="2" y="12" width="4" height="8" rx="2" fill="currentColor" fillOpacity="0.6"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800 text-lg mb-1">Para ofertar</p>
+                  <p className="font-medium text-gray-700">usá el slider o ingresá el valor manualmente.</p>
+                </div>
               </div>
-              <div className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
-                <p className="text-gray-700">Cuando tengas tu oferta lista, ¡enviala!</p>
+
+              {/* Card 3 - Yellow */}
+              <div className="flex items-center gap-4 p-6 rounded-3xl" style={{ backgroundColor: '#F7E89B' }}>
+                {/* Sparkle/Star Icon */}
+                <div className="flex-shrink-0">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-gray-800">
+                    <path d="M16 4L18.5 11.5L26 14L18.5 16.5L16 24L13.5 16.5L6 14L13.5 11.5L16 4Z" fill="currentColor"/>
+                    <path d="M24 8L25 10L27 11L25 12L24 14L23 12L21 11L23 10L24 8Z" fill="currentColor" fillOpacity="0.7"/>
+                    <path d="M8 6L8.5 7.5L10 8L8.5 8.5L8 10L7.5 8.5L6 8L7.5 7.5L8 6Z" fill="currentColor" fillOpacity="0.5"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800 text-lg mb-1">El sistema aprueba</p>
+                  <p className="font-medium text-gray-700">las mejores ofertas ¡al instante!</p>
+                </div>
               </div>
             </div>
 
@@ -680,13 +813,13 @@ const ShuQApp = () => {
                 markOnboardingSeen();
                 setCurrentScreen('offer');
               }}
-              className="w-full px-8 py-4 text-lg rounded-2xl"
+              className="w-full px-8 py-4 text-lg font-bold rounded-2xl"
               style={{
-                backgroundColor: '#B5FFA3',
-                color: '#000'
+                backgroundColor: '#2D3748',
+                color: '#fff'
               }}
             >
-              ¡Empecemos!
+              Comenzar
             </Button>
           </div>
         </div>
@@ -694,11 +827,11 @@ const ShuQApp = () => {
     );
   }
 
-  // Products List Screen (Home Page)
+  // Home Screen - Clean & Minimalistic Design
   if (currentScreen === 'products') {
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
-        <div className="max-w-md mx-auto">
+      <div className="min-h-screen bg-white p-4 font-lexend">
+        <div className="max-w-md mx-auto h-full flex flex-col">
           {/* Header with Menu */}
           <div className="flex justify-between items-center mb-8">
             <HamburgerMenu />
@@ -706,25 +839,97 @@ const ShuQApp = () => {
             <div className="w-10"></div> {/* Spacer for centering */}
           </div>
 
-          {/* Main Content */}
-          <div className="px-4">
-            {/* QR Scanner Button - Moved to top */}
-            <div className="mb-6">
-              <Button
-                onClick={() => setCurrentScreen('camera')}
-                className="w-full rounded-2xl py-4"
-                style={{
-                  backgroundColor: '#B5FFA3',
-                  color: '#000'
-                }}
-              >
-                <Camera size={20} className="mr-2" />
-                Escanear código QR
-              </Button>
+          {/* Main Content - Perfectly Centered */}
+          <div className="flex-1 flex flex-col justify-center items-center px-4">
+            {/* Main Tagline - Clean & Centered */}
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                Elegí la prenda
+              </h2>
+              <p className="text-4xl font-bold text-gray-900 relative">
+                y proponé{" "}
+                <span className="relative inline-block">
+                  tu precio.
+                  {/* Crayon-style underline */}
+                  <svg 
+                    className="absolute -bottom-2 left-0 w-full h-3" 
+                    viewBox="0 0 200 12" 
+                    fill="none"
+                    preserveAspectRatio="none"
+                  >
+                    <path 
+                      d="M2 8C20 4 40 10 60 6C80 2 100 8 120 5C140 2 160 7 180 4C185 3 190 4 198 5" 
+                      stroke="#8069FF" 
+                      strokeWidth="4" 
+                      strokeLinecap="round"
+                      style={{
+                        filter: 'url(#crayon-texture)'
+                      }}
+                    />
+                    <defs>
+                      <filter id="crayon-texture">
+                        <feTurbulence 
+                          baseFrequency="0.9 0.1" 
+                          numOctaves="2" 
+                          result="noise"
+                        />
+                        <feDisplacementMap 
+                          in="SourceGraphic" 
+                          in2="noise" 
+                          scale="1"
+                        />
+                      </filter>
+                    </defs>
+                  </svg>
+                </span>
+              </p>
             </div>
 
-            <h2 className="text-2xl font-bold mb-6 text-center">Elegí tu producto</h2>
-            
+            {/* Primary CTA Button */}
+            <Button
+              onClick={() => setCurrentScreen('camera')}
+              className="w-full max-w-sm px-8 py-6 text-xl font-bold rounded-3xl shadow-lg transform transition-all duration-200 hover:scale-105"
+              style={{
+                backgroundColor: '#B5FFA3',
+                color: '#000'
+              }}
+            >
+              Escanear código QR
+            </Button>
+
+            {/* Subtle secondary action */}
+            <button
+              onClick={() => setCurrentScreen('productsList')}
+              className="mt-6 text-gray-500 text-lg font-medium underline decoration-dotted hover:text-gray-700 transition-colors"
+            >
+              Ver productos disponibles
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Products List Screen (Moved from Home)
+  if (currentScreen === 'productsList') {
+    return (
+      <div className="min-h-screen bg-white p-4 font-lexend">
+        <div className="max-w-md mx-auto">
+          {/* Header with Back Button */}
+          <div className="flex justify-between items-center mb-8">
+            <Button 
+              onClick={() => setCurrentScreen('products')} 
+              variant="ghost" 
+              className="p-2"
+            >
+              <X size={24} />
+            </Button>
+            <h1 className="text-lg font-semibold">Productos Disponibles</h1>
+            <div className="w-10"></div> {/* Spacer */}
+          </div>
+
+          {/* Products List */}
+          <div className="px-4">
             <div className="space-y-3">
               {allProducts.map((product) => (
                 <div 
@@ -762,7 +967,7 @@ const ShuQApp = () => {
   // Camera Screen
   if (currentScreen === 'camera') {
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
+      <div className="min-h-screen bg-white p-4 font-lexend">
         <div className="max-w-md mx-auto h-full">
           {/* Header */}
           <div className="flex justify-between items-center mb-4 relative z-10">
@@ -875,91 +1080,128 @@ const ShuQApp = () => {
 
   // Offer Screen
   if (currentScreen === 'offer') {
+    // Initialize offer price to product price if not set
+    if (offerPrice === 75000 || offerPrice < selectedProduct.price * 0.1) {
+      setOfferPrice(selectedProduct.price);
+    }
+    
     const discountPercentage = Math.round((selectedProduct.price - offerPrice) / selectedProduct.price * 100);
 
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
+      <div className="min-h-screen bg-white p-4 font-lexend">
         <div className="max-w-md mx-auto">
-          {/* Header with Menu and Exit */}
-          <div className="flex justify-between items-center mb-4">
+          {/* Header with Menu and Title */}
+          <div className="flex justify-between items-center mb-8">
             <HamburgerMenu />
-            <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
-              <X size={24} />
-            </Button>
+            <h1 className="text-lg font-semibold">ShuQ</h1>
+            <div className="w-10"></div> {/* Spacer for centering */}
           </div>
 
-          {/* Product Details */}
-          <div className="flex items-start gap-4 mb-6">
-            <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-              <ProductImage
-                src={selectedProduct.image}
-                alt={selectedProduct.name}
-                className="w-full h-full object-cover object-center"
-              />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold mb-1">{selectedProduct.name}</h2>
-              <p className="text-gray-600">Precio oficial: ${selectedProduct.price.toLocaleString()}</p>
-            </div>
-          </div>
-
-          {/* Offer Section */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold mb-4">¿Cuánto querés pagar?</h3>
-              <div className="relative">
-                <input
-                  type="range"
-                  min={0}
-                  max={selectedProduct.price}
-                  value={offerPrice}
-                  onChange={e => setOfferPrice(Number(e.target.value))}
-                  className="w-full ultra-thin-slider"
-                  style={{
-                    background: `linear-gradient(to right, #D5B4F7 0%, #D5B4F7 ${offerPrice / selectedProduct.price * 100}%, #e5e7eb ${offerPrice / selectedProduct.price * 100}%, #e5e7eb 100%)`
-                  }}
+          {/* Product Card */}
+          <div className="bg-gray-50 rounded-2xl p-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <ProductImage
+                  src={selectedProduct.image}
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-cover object-center"
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>$0</span>
-                <span>${selectedProduct.price.toLocaleString()}</span>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-gray-900 mb-1">{selectedProduct.name}</h2>
+                <p className="text-gray-600 text-sm">Precio oficial: ${selectedProduct.price.toLocaleString()}</p>
               </div>
             </div>
+          </div>
 
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Ingresá el monto manualmente</p>
+          {/* Question */}
+          <h3 className="text-xl font-bold text-gray-900 mb-6">¿Cuánto querés pagar?</h3>
+
+          {/* Slider Section */}
+          <div className="mb-6">
+            <div className="relative mb-3">
               <input
-                type="number"
+                type="range"
+                min={0}
+                max={selectedProduct.price}
+                step={1000}
                 value={offerPrice}
                 onChange={e => setOfferPrice(Number(e.target.value))}
-                className="w-full p-3 border border-gray-300 rounded-2xl text-center text-lg max-h-10"
-                placeholder="Ingresá tu oferta"
+                className="w-full thin-purple-slider"
+                style={{
+                  background: `linear-gradient(to right, #8069FF 0%, #8069FF ${offerPrice / selectedProduct.price * 100}%, #e5e7eb ${offerPrice / selectedProduct.price * 100}%, #e5e7eb 100%)`
+                }}
               />
             </div>
-
-            {/* Attempts Indicator - Moved below input */}
-            <div className="text-center mb-4">
-              <span className={`text-sm font-medium ${getAttemptColor()}`}>{getAttemptText()}</span>
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>$0</span>
+              <span>${selectedProduct.price.toLocaleString()}</span>
             </div>
-
-            <div className="text-center">
-              <p className="text-3xl font-bold">${offerPrice.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">
-                {discountPercentage}% OFF del precio original
-              </p>
-            </div>
-
-            <Button
-              onClick={handleSendOffer}
-              className="w-full rounded-2xl py-6 text-lg"
-              style={{
-                backgroundColor: '#B5FFA3',
-                color: '#000'
-              }}
-            >
-              Ofertar
-            </Button>
           </div>
+
+          {/* Manual Input Section */}
+          <div className="mb-6">
+            <p className="text-sm text-gray-600 mb-3">Ingresá el monto manualmente</p>
+            <input
+              type="number"
+              value={offerPrice}
+              onChange={e => setOfferPrice(Number(e.target.value))}
+              className="w-full p-4 border border-gray-200 rounded-2xl text-center text-lg bg-white"
+              placeholder="Ingresá tu oferta"
+            />
+          </div>
+
+          {/* Attempts Section */}
+          <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+            <div className="text-center">
+              <div className="flex justify-center gap-2 mb-2">
+                {attemptsRemaining === 3 && (
+                  <>
+                    <span className="text-2xl">🙊</span>
+                    <span className="text-2xl">🙉</span>
+                    <span className="text-2xl">🙈</span>
+                  </>
+                )}
+                {attemptsRemaining === 2 && (
+                  <>
+                    <span className="text-2xl opacity-30">⚪</span>
+                    <span className="text-2xl">🙉</span>
+                    <span className="text-2xl">🙈</span>
+                  </>
+                )}
+                {attemptsRemaining === 1 && (
+                  <>
+                    <span className="text-2xl opacity-30">⚪</span>
+                    <span className="text-2xl opacity-30">⚪</span>
+                    <span className="text-2xl">🙈</span>
+                  </>
+                )}
+              </div>
+              <span className="text-gray-700 font-medium">
+                {attemptsRemaining === 1 ? 'Tenés un intento' : `Tenés ${attemptsRemaining} intentos`}
+              </span>
+            </div>
+          </div>
+
+          {/* Price Display */}
+          <div className="text-center mb-8">
+            <p className="text-5xl font-bold text-gray-900 mb-2">${offerPrice.toLocaleString()}</p>
+            <p className="text-gray-600">
+              {discountPercentage}% OFF del precio original
+            </p>
+          </div>
+
+          {/* Offer Button */}
+          <Button
+            onClick={handleSendOffer}
+            className="w-full rounded-2xl py-4 text-lg font-bold"
+            style={{
+              backgroundColor: '#B5FFA3',
+              color: '#000'
+            }}
+          >
+            Ofertar
+          </Button>
         </div>
 
         <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
@@ -971,51 +1213,84 @@ const ShuQApp = () => {
   if (currentScreen === 'result') {
     if (lastOfferResult === 'accepted') {
       const acceptedCoupon = coupons[coupons.length - 1]; // Get the most recent coupon
+      
+      // Calculate discount percentage
+      const discountPercentage = selectedProduct ? Math.round((selectedProduct.price - offerPrice) / selectedProduct.price * 100) : 0;
 
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
+        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
           <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu and Exit */}
-            <div className="flex justify-between items-center mb-4">
+            {/* Header with Menu */}
+            <div className="flex justify-between items-center mb-8">
               <HamburgerMenu />
-              <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
-                <X size={24} />
-              </Button>
+              <h1 className="text-lg font-semibold text-gray-700">ShuQ</h1>
+              <div className="w-6"></div> {/* Spacer for center alignment */}
             </div>
 
-            <div className="flex-1 flex flex-col justify-center text-center px-4">
-              {/* Success emoji */}
-              <div className="text-6xl mb-6">☺</div>
-            
-              <h1 className="text-2xl font-bold mb-6">¡Tu oferta fue aceptada!</h1>
+            <div className="flex-1 flex flex-col justify-center px-4">
               
-              {/* Code Display Section */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-4">Acercate a caja y mostrá este código</h2>
-                <div className="bg-gray-100 p-6 rounded-2xl mb-6">
-                  <p className="text-4xl font-mono font-bold text-center mb-2">
-                    {acceptedCoupon?.code || 'ABC123XY'}
+              {/* Enhanced Green success card with discount */}
+              <div className="bg-gradient-to-r from-green-300 to-green-400 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-lg" 
+                   style={{
+                     boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3), 0 4px 10px rgba(34, 197, 94, 0.2)'
+                   }}>
+                <div className="flex items-center gap-4">
+                  {/* Happy face without background */}
+                  <div className="flex-shrink-0">
+                    <img 
+                      src="/lovable-uploads/happy-face-accepted.png" 
+                      alt="Happy face" 
+                      className="w-16 h-16 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😄</div>';
+                      }}
+                    />
+                  </div>
+                  {/* Success text with discount */}
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">¡Tu oferta fue aceptada!</h2>
+                    <p className="text-lg font-medium text-gray-800">Obtuviste {discountPercentage}% OFF</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="text-center mb-8">
+                <p className="text-gray-600 text-base font-medium">
+                  Mostrá este cupón en caja
+                </p>
+                <p className="text-gray-600 text-base font-medium">
+                  y pagá lo que ofertaste
+                </p>
+              </div>
+              
+              {/* Coupon code in light grey rectangle */}
+              <div className="bg-gray-100 rounded-2xl p-8 mb-6 border-2 border-gray-200 shadow-md">
+                <div className="text-center">
+                  <p className="text-5xl font-bold text-gray-900 mb-3 tracking-wider font-mono">
+                    {acceptedCoupon?.code || 'NOCB1FFP'}
                   </p>
-                  <p className="text-sm text-gray-600">
-                    {selectedProduct?.name} por ${offerPrice.toLocaleString()}
+                  <p className="text-gray-700 text-base font-medium">
+                    {selectedProduct?.name?.toUpperCase()} por ${offerPrice.toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              {/* Promotional message - smaller and lower */}
-              <div className="text-center mb-8 text-sm">
-                <p className="font-semibold mb-1 text-gray-600">
-              </p>
-                <p className="text-gray-500">
-              </p>
-              </div>
-
-              <div className="space-y-4 w-full">
-                <Button onClick={goToHomeProducts} className="w-full bg-purple-600 text-white rounded-2xl py-4">
+              {/* Action buttons */}
+              <div className="space-y-4 w-full mt-12">
+                <Button 
+                  onClick={() => setCurrentScreen('productsList')} 
+                  className="w-full text-white rounded-2xl py-4 text-base font-medium bg-black hover:bg-gray-800"
+                >
                   Ver más productos
                 </Button>
-                <Button onClick={() => setCurrentScreen('coupons')} variant="outline" className="w-full rounded-2xl py-4 border-purple-600 text-purple-600">
-                  Ver mis ofertas
+                <Button 
+                  onClick={() => setCurrentScreen('coupons')} 
+                  variant="outline" 
+                  className="w-full rounded-2xl py-4 text-base font-medium border-black text-black hover:bg-gray-50"
+                >
+                  Ver mis cupones
                 </Button>
               </div>
             </div>
@@ -1026,41 +1301,86 @@ const ShuQApp = () => {
       );
     }
 
-    // Rejected - check if no attempts remaining
+    // Rejected - check if no attempts remaining (Final rejection screen) - Blue theme
     if (attemptsRemaining === 0) {
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
+        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
           <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu and Exit */}
-            <div className="flex justify-between items-center mb-4">
+            {/* Header with Menu */}
+            <div className="flex justify-between items-center mb-8">
               <HamburgerMenu />
-              <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
-                <X size={24} />
-              </Button>
+              <h1 className="text-lg font-semibold">ShuQ</h1>
+              <div className="w-6"></div>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center text-center px-4">
-              {/* Sad emoji */}
-              <div className="text-6xl mb-6">☹</div>
-              
-              <h1 className="text-xl font-bold mb-4">Tu oferta no fue aceptada</h1>
-              
-              <p className="text-gray-600 text-sm mb-6">
-                Pero te regalamos un descuento para no irte con las manos vacías.
-              </p>
-
-              {/* Special Discount Coupon Section */}
-              <div className="bg-gray-50 p-6 rounded-2xl mb-8 border-2 border-dashed border-gray-300">
-                <h3 className="text-lg font-bold mb-2">OFERTA ESPECIAL</h3>
-                <p className="text-md font-semibold mb-1">15% OFF en Camisa Blanca</p>
-                <p className="text-sm text-gray-600">Válido por 30 minutos.</p>
+            <div className="flex-1 flex flex-col justify-center px-4">
+              {/* Blue colored card with rejected face */}
+              <div className="bg-gradient-to-r from-blue-200 to-blue-300 rounded-2xl p-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    <img 
+                      src="/lovable-uploads/rejected-face.png" 
+                      alt="Rejected face" 
+                      className="w-16 h-16 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😔</div>';
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">No se dio esta vez</h2>
+                    <p className="text-base font-medium text-gray-800">¡Pero no te vas con las manos vacías!</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4 w-full">
-                <Button onClick={handleAcceptSpecialDiscount} className="w-full bg-purple-600 text-white rounded-2xl py-4">
-                  Aceptar el descuento
-                </Button>
+              {/* Description text */}
+              <div className="text-center mb-6">
+                <p className="text-gray-700 text-base font-medium">
+                  Desbloqueaste un descuento exclusivo para llevarte esta prenda igual.
+                </p>
               </div>
+
+              {/* Special Discount Section - More Bouncy */}
+              <div className="text-center mb-8">
+                {/* Prominent OFERTA ESPECIAL header */}
+                <div className="mb-6">
+                  <h3 className="text-4xl font-extrabold tracking-wide" style={{ color: '#87CEEB' }}>
+                    OFERTA ESPECIAL
+                  </h3>
+                </div>
+                
+                {/* Enhanced Bouncy Coupon Card */}
+                <div className="relative">
+                  {/* Main coupon card with enhanced styling */}
+                  <div className="bg-white p-8 rounded-3xl transform transition-all duration-300 hover:scale-105"
+                       style={{
+                         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.08)',
+                         border: '2px solid #f0f0f0'
+                       }}>
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
+                        15% OFF en Camisa Blanca
+                      </p>
+                      <p className="text-base text-gray-600 font-medium">
+                        Cupón válido por 30 minutos
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Subtle background decoration */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-100 to-blue-200 rounded-3xl -z-10 opacity-30"></div>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <Button 
+                onClick={handleAcceptSpecialDiscount} 
+                className="w-full bg-black text-white rounded-2xl py-4 text-base font-medium hover:bg-gray-800"
+              >
+                Aceptar el descuento
+              </Button>
             </div>
           </div>
 
@@ -1070,51 +1390,145 @@ const ShuQApp = () => {
     }
 
     // Rejected - with attempts remaining
-    return (
-      <div className="min-h-screen bg-white p-4 flex flex-col font-roboto">
-        <div className="max-w-md mx-auto w-full">
-          {/* Header with Menu and Exit */}
-          <div className="flex justify-between items-center mb-4">
-            <HamburgerMenu />
-            <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
-              <X size={24} />
-            </Button>
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center text-center px-4">
-            {/* Minimalist sad/disappointed emoji */}
-            <div className="text-6xl mb-6">☹</div>
-            
-            <h1 className="text-xl font-bold mb-4">No pudimos aceptar esa oferta</h1>
-            
-            {/* Updated tip copy */}
-            <div className="text-center mb-6">
-              <p className="text-sm" style={{
-                color: '#D5B4F7'
-              }}>
-                <span className="font-semibold">#Tip</span>
-              </p>
-              <p className="text-gray-600 text-sm">
-                Probá subir un poquito tu oferta: a veces, un pequeño ajuste hace toda la diferencia.
-              </p>
+    // Determine which attempt this is (3 - attemptsRemaining gives us the attempt number)
+    const currentAttempt = 3 - attemptsRemaining + 1;
+    
+    // First attempt (2 attempts remaining) - Peach/Orange theme
+    if (attemptsRemaining === 2) {
+      return (
+        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
+          <div className="max-w-md mx-auto w-full">
+            {/* Header with Menu and Exit */}
+            <div className="flex justify-between items-center mb-8">
+              <HamburgerMenu />
+              <h1 className="text-lg font-semibold">ShuQ</h1>
+              <div className="w-6"></div>
             </div>
-            
-            <p className="text-sm text-yellow-600 mb-8">
-              {attemptsRemaining === 1 ? 'Te queda 1 intento' : `Te quedan ${attemptsRemaining} intentos`}
-            </p>
 
-            <Button
-              onClick={() => setCurrentScreen('offer')}
-              className="w-full bg-purple-600 text-white rounded-2xl py-4"
-            >
-              Hacer nueva oferta
-            </Button>
+            <div className="flex-1 flex flex-col justify-center px-4">
+              {/* Peach colored card */}
+              <div className="bg-gradient-to-r from-orange-200 to-orange-300 rounded-2xl p-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    <img 
+                      src="/lovable-uploads/intent-1-face.png" 
+                      alt="Close face" 
+                      className="w-16 h-16 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😌</div>';
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">¡Estuviste cerca!</h2>
+                    <p className="text-base font-medium text-gray-800">Probá ofertar de nuevo.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tip section */}
+              <div className="text-center mb-6">
+                <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
+                <p className="text-gray-600 text-sm">
+                  A veces un pequeño ajuste hace toda la diferencia
+                </p>
+              </div>
+
+              {/* Attempts remaining */}
+              <div className="flex justify-center items-center gap-2 mb-8">
+                <div className="flex gap-2">
+                  <span className="text-2xl opacity-30">⚪</span>
+                  <span className="text-2xl">🙉</span>
+                  <span className="text-2xl">🙈</span>
+                </div>
+                <span className="text-gray-700 font-medium ml-2">Te quedan dos intentos</span>
+              </div>
+
+              {/* CTA Button */}
+              <Button
+                onClick={() => setCurrentScreen('offer')}
+                className="w-full bg-black text-white rounded-2xl py-4 text-base font-medium hover:bg-gray-800"
+              >
+                Hacer nueva oferta
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
-      </div>
-    );
+          <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
+        </div>
+      );
+    }
+
+    // Second attempt (1 attempt remaining) - Purple theme
+    if (attemptsRemaining === 1) {
+      return (
+        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
+          <div className="max-w-md mx-auto w-full">
+            {/* Header with Menu and Exit */}
+            <div className="flex justify-between items-center mb-8">
+              <HamburgerMenu />
+              <h1 className="text-lg font-semibold">ShuQ</h1>
+              <div className="w-6"></div>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-center px-4">
+              {/* Purple colored card */}
+              <div className="bg-gradient-to-r from-purple-200 to-purple-300 rounded-2xl p-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    <img 
+                      src="/lovable-uploads/intent-2-face.png" 
+                      alt="Heart eyes face" 
+                      className="w-16 h-16 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😍</div>';
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">¡A un paso de lograrlo!</h2>
+                    <p className="text-base font-medium text-gray-800">Ofertá una vez más</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tip section */}
+              <div className="text-center mb-6">
+                <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
+                <p className="text-gray-600 text-sm">
+                  Esta es la jugada clave, ¡que sea la más precisa!
+                </p>
+              </div>
+
+              {/* Attempts remaining */}
+              <div className="flex justify-center items-center gap-2 mb-8">
+                <div className="flex gap-2">
+                  <span className="text-2xl opacity-30">⚪</span>
+                  <span className="text-2xl opacity-30">⚪</span>
+                  <span className="text-2xl">🙈</span>
+                </div>
+                <span className="text-gray-700 font-medium ml-2">Te queda un intento</span>
+              </div>
+
+              {/* CTA Button */}
+              <Button
+                onClick={() => setCurrentScreen('offer')}
+                className="w-full bg-black text-white rounded-2xl py-4 text-base font-medium hover:bg-gray-800"
+              >
+                Hacer nueva oferta
+              </Button>
+            </div>
+          </div>
+
+          <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
+        </div>
+      );
+    }
+
+    // This shouldn't happen since we handle attemptsRemaining === 0 above, but just in case
+    return null;
   }
 
   // Coupons Screen
@@ -1122,7 +1536,7 @@ const ShuQApp = () => {
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
     
     return (
-      <div className="min-h-screen bg-white p-4 font-roboto">
+      <div className="min-h-screen bg-white p-4 font-lexend">
         <div className="max-w-md mx-auto">
           {/* Header with Menu and Exit */}
           <div className="flex justify-between items-center mb-4">
