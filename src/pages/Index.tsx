@@ -632,7 +632,7 @@ const ShuQApp = () => {
             className="flex items-center gap-3 justify-start p-4 h-auto"
           >
             <Receipt size={20} />
-            <span className="text-lg">Mis ofertas</span>
+            <span className="text-lg">Mis ofertas aprobadas</span>
           </Button>
         </div>
       </SheetContent>
@@ -1122,6 +1122,13 @@ const ShuQApp = () => {
 
   // Offer Screen
   if (currentScreen === 'offer') {
+    // Check if user already has an accepted offer for this product
+    const existingOffer = coupons.find(coupon => 
+      coupon.productSku === selectedProduct.sku && 
+      coupon.type === 'accepted' && 
+      new Date() < coupon.expiresAt
+    );
+    
     // Initialize offer price to product price if not set
     if (offerPrice === 75000 || offerPrice < selectedProduct.price * 0.1) {
       setOfferPrice(selectedProduct.price);
@@ -1157,10 +1164,27 @@ const ShuQApp = () => {
             </div>
           </div>
 
-          {/* Question */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">¿Cuánto querés pagar?</h3>
+          {/* Existing Offer Alert */}
+          {existingOffer && (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-green-800 mb-1">¡Ya tenés una oferta aprobada!</h4>
+                  <p className="text-sm text-green-700">
+                    ${existingOffer.offeredPrice.toLocaleString()} - Código: {existingOffer.code}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Slider Section */}
+          {/* Question */}
+          <h3 className="text-xl font-bold text-gray-900 mb-6">
+            {existingOffer ? "Tu oferta actual:" : "¿Cuánto querés pagar?"}
+          </h3>
+
+          {/* Slider Section - Disabled if existing offer */}
           <div className="mb-6">
             <div className="relative mb-3">
               <input
@@ -1168,11 +1192,12 @@ const ShuQApp = () => {
                 min={0}
                 max={selectedProduct.price}
                 step={1000}
-                value={offerPrice}
-                onChange={e => setOfferPrice(Number(e.target.value))}
-                className="w-full thin-purple-slider"
+                value={existingOffer ? existingOffer.offeredPrice : offerPrice}
+                onChange={e => !existingOffer && setOfferPrice(Number(e.target.value))}
+                disabled={!!existingOffer}
+                className={`w-full thin-purple-slider ${existingOffer ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{
-                  background: `linear-gradient(to right, #8069FF 0%, #8069FF ${offerPrice / selectedProduct.price * 100}%, #e5e7eb ${offerPrice / selectedProduct.price * 100}%, #e5e7eb 100%)`
+                  background: `linear-gradient(to right, #8069FF 0%, #8069FF ${(existingOffer ? existingOffer.offeredPrice : offerPrice) / selectedProduct.price * 100}%, #e5e7eb ${(existingOffer ? existingOffer.offeredPrice : offerPrice) / selectedProduct.price * 100}%, #e5e7eb 100%)`
                 }}
               />
             </div>
@@ -1182,59 +1207,73 @@ const ShuQApp = () => {
             </div>
           </div>
 
-
-
-          {/* Attempts Section */}
-          <div className="bg-gray-50 rounded-2xl p-4 mb-6">
-            <div className="text-center">
-              <div className="flex justify-center gap-2 mb-2">
-                {attemptsRemaining === 3 && (
-                  <>
-                    <span className="text-2xl">🙊</span>
-                    <span className="text-2xl">🙉</span>
-                    <span className="text-2xl">🙈</span>
-                  </>
-                )}
-                {attemptsRemaining === 2 && (
-                  <>
-                    <span className="text-2xl opacity-30">⚪</span>
-                    <span className="text-2xl">🙉</span>
-                    <span className="text-2xl">🙈</span>
-                  </>
-                )}
-                {attemptsRemaining === 1 && (
-                  <>
-                    <span className="text-2xl opacity-30">⚪</span>
-                    <span className="text-2xl opacity-30">⚪</span>
-                    <span className="text-2xl">🙈</span>
-                  </>
-                )}
+          {/* Attempts Section - Only show if no existing offer */}
+          {!existingOffer && (
+            <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+              <div className="text-center">
+                <div className="flex justify-center gap-2 mb-2">
+                  {attemptsRemaining === 3 && (
+                    <>
+                      <span className="text-2xl">🙊</span>
+                      <span className="text-2xl">🙉</span>
+                      <span className="text-2xl">🙈</span>
+                    </>
+                  )}
+                  {attemptsRemaining === 2 && (
+                    <>
+                      <span className="text-2xl opacity-30">⚪</span>
+                      <span className="text-2xl">🙉</span>
+                      <span className="text-2xl">🙈</span>
+                    </>
+                  )}
+                  {attemptsRemaining === 1 && (
+                    <>
+                      <span className="text-2xl opacity-30">⚪</span>
+                      <span className="text-2xl opacity-30">⚪</span>
+                      <span className="text-2xl">🙈</span>
+                    </>
+                  )}
+                </div>
+                <span className="text-gray-700 font-medium">
+                  {attemptsRemaining === 1 ? 'Tenés un intento' : `Tenés ${attemptsRemaining} intentos`}
+                </span>
               </div>
-              <span className="text-gray-700 font-medium">
-                {attemptsRemaining === 1 ? 'Tenés un intento' : `Tenés ${attemptsRemaining} intentos`}
-              </span>
             </div>
-          </div>
+          )}
 
           {/* Price Display */}
           <div className="text-center mb-8">
-            <p className="text-5xl font-bold text-gray-900 mb-2">${offerPrice.toLocaleString()}</p>
+            <p className="text-5xl font-bold text-gray-900 mb-2">
+              ${(existingOffer ? existingOffer.offeredPrice : offerPrice).toLocaleString()}
+            </p>
             <p className="text-gray-600">
-              {discountPercentage}% OFF del precio original
+              {existingOffer 
+                ? `${Math.round((selectedProduct.price - existingOffer.offeredPrice) / selectedProduct.price * 100)}% OFF del precio original`
+                : `${discountPercentage}% OFF del precio original`
+              }
             </p>
           </div>
 
-          {/* Offer Button */}
-          <Button
-            onClick={handleSendOffer}
-            className="w-full rounded-2xl py-4 text-lg font-bold"
-            style={{
-              backgroundColor: '#B5FFA3',
-              color: '#000'
-            }}
-          >
-            Ofertar
-          </Button>
+          {/* Action Button */}
+          {existingOffer ? (
+            <Button
+              onClick={() => setCurrentScreen('coupons')}
+              className="w-full rounded-2xl py-4 text-lg font-bold bg-green-600 text-white hover:bg-green-700"
+            >
+              Ver cupón
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSendOffer}
+              className="w-full rounded-2xl py-4 text-lg font-bold"
+              style={{
+                backgroundColor: '#B5FFA3',
+                color: '#000'
+              }}
+            >
+              Ofertar
+            </Button>
+          )}
         </div>
 
         <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
