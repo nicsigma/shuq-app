@@ -383,25 +383,30 @@ const ShuQApp = () => {
   };
 
   const handleAcceptSpecialDiscount = () => {
+    if (!selectedProduct) return; // Safety check
+    
+    // Calculate 15% discount price (85% of original price)
+    const discountedPrice = Math.round(selectedProduct.price * 0.85);
+    
+    // Set the offer price to the discounted amount
+    setOfferPrice(discountedPrice);
+    
+    // Create the special discount coupon using normal coupon format
     const specialDiscountCoupon: Coupon = {
       id: Date.now().toString(),
-      productName: 'Camisa Blanca',
-      offeredPrice: 0, // Not applicable for percentage discount
+      productName: selectedProduct.name,
+      offeredPrice: discountedPrice,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-      type: 'special-discount',
+      type: 'accepted', // Use 'accepted' type to follow normal flow
       code: generateCode(),
-      discountPercentage: 15
+      productImage: selectedProduct.image,
+      productSku: selectedProduct.sku
     };
     saveCoupons([...coupons, specialDiscountCoupon]);
     
-    // Reset the offer flow state
-    setSelectedProduct(null);
-    setOfferPrice(75000);
-    setAttemptsRemaining(3);
-    setLastOfferResult(null);
-    
-    // Navigate to coupons screen
-    setCurrentScreen('coupons');
+    // Follow normal accepted offer flow
+    setLastOfferResult('accepted');
+    setCurrentScreen('result');
   };
 
   const resetFlow = () => {
@@ -594,6 +599,7 @@ const ShuQApp = () => {
           </Button>
           <Button
             onClick={() => {
+              navigate('/');
               setCurrentScreen('productsList');
               setIsMenuOpen(false);
             }}
@@ -931,7 +937,10 @@ const ShuQApp = () => {
 
             {/* Subtle secondary action */}
             <button
-              onClick={() => setCurrentScreen('productsList')}
+              onClick={() => {
+                navigate('/');
+                setCurrentScreen('productsList');
+              }}
               className="mt-6 text-gray-500 text-lg font-medium underline decoration-dotted hover:text-gray-700 transition-colors"
             >
               Ver productos disponibles
@@ -1173,17 +1182,7 @@ const ShuQApp = () => {
             </div>
           </div>
 
-          {/* Manual Input Section */}
-          <div className="mb-6">
-            <p className="text-sm text-gray-600 mb-3">Ingresá el monto manualmente</p>
-            <input
-              type="number"
-              value={offerPrice}
-              onChange={e => setOfferPrice(Number(e.target.value))}
-              className="w-full p-4 border border-gray-200 rounded-2xl text-center text-lg bg-white"
-              placeholder="Ingresá tu oferta"
-            />
-          </div>
+
 
           {/* Attempts Section */}
           <div className="bg-gray-50 rounded-2xl p-4 mb-6">
@@ -1314,10 +1313,10 @@ const ShuQApp = () => {
               {/* Action buttons */}
               <div className="space-y-4 w-full mt-12">
                 <Button 
-                  onClick={() => setCurrentScreen('productsList')} 
+                  onClick={() => setCurrentScreen('camera')} 
                   className="w-full text-white rounded-2xl py-4 text-base font-medium bg-black hover:bg-gray-800"
                 >
-                  Ver más productos
+                  Escanear otro producto
                 </Button>
                 <Button 
                   onClick={() => setCurrentScreen('coupons')} 
@@ -1395,7 +1394,7 @@ const ShuQApp = () => {
                        }}>
                     <div className="text-center">
                       <p className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
-                        15% OFF en Camisa Blanca
+                        15% OFF en {selectedProduct.name}
                       </p>
                       <p className="text-base text-gray-600 font-medium">
                         Cupón válido por 30 minutos
