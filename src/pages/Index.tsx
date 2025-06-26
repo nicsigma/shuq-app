@@ -632,7 +632,7 @@ const ShuQApp = () => {
             className="flex items-center gap-3 justify-start p-4 h-auto"
           >
             <Receipt size={20} />
-            <span className="text-lg">Mis ofertas aprobadas</span>
+            <span className="text-lg">Mis cupones</span>
           </Button>
         </div>
       </SheetContent>
@@ -1076,7 +1076,6 @@ const ShuQApp = () => {
             <div className="mt-4 space-y-3">
               <div className="text-center">
                 <h2 className="text-xl font-bold mb-2">Escaneá el código QR</h2>
-                <p className="text-gray-600 text-sm">Apuntá la cámara al código QR de la prenda</p>
               </div>
               
               {/* Test Buttons for Development */}
@@ -1619,16 +1618,28 @@ const ShuQApp = () => {
           </div>
 
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Mis ofertas aprobadas</h1>
+            <h1 className="text-2xl font-bold mb-2">Mis cupones</h1>
             <p className="text-gray-600 text-sm">Mostrá el código en caja para pagar el precio acordado.</p>
           </div>
 
           {activeCoupons.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">No tenés ofertas aprobadas</p>
-              <Button onClick={goToHomeProducts} className="bg-purple-600 text-white rounded-2xl px-6 py-3">
-                Ver otros productos
-              </Button>
+              <p className="text-xl text-gray-700 font-medium mb-8">No tenés ofertas aprobadas todavía </p>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setCurrentScreen('camera')}
+                  className="w-full px-6 py-4 text-lg font-bold rounded-2xl"
+                  style={{
+                    backgroundColor: '#B5FFA3',
+                    color: '#000'
+                  }}
+                >
+                  Escanear QR
+                </Button>
+                <Button onClick={goToHomeProducts} variant="outline" className="w-full rounded-2xl px-6 py-3 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white">
+                  Ver otros productos
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4 mb-6">
@@ -1719,6 +1730,22 @@ const ShuQApp = () => {
                   </Card>
                 );
               })}
+            </div>
+          )}
+
+          {/* Add scan button when there are active coupons */}
+          {activeCoupons.length > 0 && (
+            <div className="mt-6">
+              <Button
+                onClick={() => setCurrentScreen('camera')}
+                className="w-full px-6 py-4 text-lg font-bold rounded-2xl"
+                style={{
+                  backgroundColor: '#B5FFA3',
+                  color: '#000'
+                }}
+              >
+                Escanear nuevo producto
+              </Button>
             </div>
           )}
         </div>
