@@ -6,7 +6,7 @@ import { X, ShoppingBag, Clock, CheckCircle, Menu, Camera, Receipt, Percent } fr
 import { ConfirmExitDialog } from '@/components/ConfirmExitDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { getProductBySku, getAllProducts, subscribeToProductChanges, unsubscribeFromProductChanges } from '@/lib/database';
+import { getProductBySku, getAllProducts, subscribeToProductChanges, unsubscribeFromProductChanges, getImageUrls } from '@/lib/database';
 import { 
   createOfferLog, 
   getAcceptedOffers, 
@@ -21,9 +21,38 @@ import {
 } from '@/lib/offerLogs';
 import { BrowserMultiFormatReader } from '@zxing/library';
 
-// Image component with proper error handling
-const ProductImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
+// Enhanced image component with multiple format fallback
+const ProductImage = ({ src, alt, className, sku }: { src: string; alt: string; className: string; sku?: string }) => {
+  const [currentSrc, setCurrentSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (sku) {
+      const urls = getImageUrls(sku);
+      setImageUrls(urls);
+      setCurrentSrc(urls[0]);
+      setCurrentIndex(0);
+    } else {
+      setCurrentSrc(src);
+      setImageUrls([src]);
+      setCurrentIndex(0);
+    }
+    setHasError(false);
+  }, [src, sku]);
+
+  const handleError = () => {
+    if (currentIndex < imageUrls.length - 1) {
+      // Try next format
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      setCurrentSrc(imageUrls[nextIndex]);
+    } else {
+      // All formats failed, show placeholder
+      setHasError(true);
+    }
+  };
 
   if (hasError) {
     return (
@@ -37,10 +66,10 @@ const ProductImage = ({ src, alt, className }: { src: string; alt: string; class
 
   return (
     <img
-      src={src}
+      src={currentSrc}
       alt={alt}
       className={className}
-      onError={() => setHasError(true)}
+      onError={handleError}
     />
   );
 };
@@ -64,6 +93,7 @@ interface Coupon {
   code: string;
   discountPercentage?: number; // For special discount coupons
   productImage?: string; // Store product image URL
+  productSku?: string; // Product SKU for image fallback
 }
 
 
@@ -316,7 +346,8 @@ const ShuQApp = () => {
         // Convert offer log to coupon format and add to local state
         const newCoupon = {
           ...transformOfferLogToCoupon(offerLog),
-          productImage: selectedProduct.image
+          productImage: selectedProduct.image,
+          productSku: selectedProduct.sku
         };
         saveCoupons([...coupons, newCoupon]);
         setLastOfferResult('accepted');
@@ -337,7 +368,8 @@ const ShuQApp = () => {
           expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
           type: 'accepted',
           code: generateCode(),
-          productImage: selectedProduct.image
+          productImage: selectedProduct.image,
+          productSku: selectedProduct.sku
         };
         saveCoupons([...coupons, newCoupon]);
         setLastOfferResult('accepted');
@@ -943,6 +975,7 @@ const ShuQApp = () => {
                         src={product.image}
                         alt={product.name}
                         className="w-full h-full object-cover object-center"
+                        sku={product.sku}
                       />
                     </div>
                     <div className="flex-1">
@@ -1105,6 +1138,7 @@ const ShuQApp = () => {
                   src={selectedProduct.image}
                   alt={selectedProduct.name}
                   className="w-full h-full object-cover object-center"
+                  sku={selectedProduct.sku}
                 />
               </div>
               <div className="flex-1">
@@ -1617,6 +1651,7 @@ const ShuQApp = () => {
                               src={imageUrl}
                               alt={coupon.productName}
                               className="w-full h-full object-cover object-center"
+                              sku={coupon.productSku}
                             />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">

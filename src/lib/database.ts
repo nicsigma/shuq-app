@@ -5,9 +5,21 @@ export type ProductInsert = Database['public']['Tables']['products']['Insert']
 export type ProductUpdate = Database['public']['Tables']['products']['Update']
 
 // Helper function to get correct Supabase storage URL
+// Try different image formats in order of preference
 export const getSupabaseImageUrl = (sku: string) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  return `${supabaseUrl}/storage/v1/object/public/products/${sku}.jpg`
+  // Priority order: webp (modern format), jpg (common), png (fallback)
+  return `${supabaseUrl}/storage/v1/object/public/products/${sku}.webp`
+}
+
+// Helper function to get fallback image URLs for different formats
+export const getImageUrls = (sku: string) => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  return [
+    `${supabaseUrl}/storage/v1/object/public/products/${sku}.webp`,
+    `${supabaseUrl}/storage/v1/object/public/products/${sku}.jpg`,
+    `${supabaseUrl}/storage/v1/object/public/products/${sku}.png`
+  ]
 }
 
 // Transform database product to app product format

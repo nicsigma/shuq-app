@@ -215,5 +215,6 @@ export const transformOfferLogToCoupon = (offerLog: OfferLog) => ({
   type: 'accepted' as const,
   code: offerLog.acceptance_code || '',
   productImage: undefined, // We'll need to get this from products table if needed
+  productSku: offerLog.product_sku, // Include SKU for image fallback
   isRedeemed: offerLog.is_redeemed
 }) 
