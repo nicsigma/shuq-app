@@ -217,4 +217,96 @@ export const transformOfferLogToCoupon = (offerLog: OfferLog) => ({
   productImage: undefined, // We'll need to get this from products table if needed
   productSku: offerLog.product_sku, // Include SKU for image fallback
   isRedeemed: offerLog.is_redeemed
-}) 
+})
+
+// Admin functions - get all offer logs (no session filter)
+export const getAllOfferLogs = async (): Promise<OfferLog[]> => {
+  const { data, error } = await supabase
+    .from('offer_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching all offer logs:', error)
+    throw error
+  }
+
+  return data || []
+}
+
+// Get offer summary by SKU
+export interface OfferSummary {
+  product_sku: string
+  product_name: string
+  product_price: number
+  total_offers: number
+  accepted_offers: number
+  rejected_offers: number
+  acceptance_rate: number
+  average_offered_price: number
+}
+
+export const getOfferSummaryBySku = async (): Promise<OfferSummary[]> => {
+  const { data, error } = await supabase
+    .from('offer_logs')
+    .select('product_sku, product_name, product_price, offer_status, offered_amount')
+
+  if (error) {
+    console.error('Error fetching offer summary:', error)
+    throw error
+  }
+
+  if (!data) return []
+
+  // Group by SKU and calculate summary
+  const summaryMap = new Map<string, { 
+    summary: OfferSummary, 
+    offeredAmounts: number[] 
+  }>()
+
+  data.forEach(log => {
+    const sku = log.product_sku
+    if (!summaryMap.has(sku)) {
+      summaryMap.set(sku, {
+        summary: {
+          product_sku: sku,
+          product_name: log.product_name,
+          product_price: log.product_price,
+          total_offers: 0,
+          accepted_offers: 0,
+          rejected_offers: 0,
+          acceptance_rate: 0,
+          average_offered_price: 0
+        },
+        offeredAmounts: []
+      })
+    }
+
+    const entry = summaryMap.get(sku)!
+    entry.summary.total_offers++
+    entry.offeredAmounts.push(log.offered_amount)
+    
+    if (log.offer_status === 'accepted') {
+      entry.summary.accepted_offers++
+    } else if (log.offer_status === 'rejected') {
+      entry.summary.rejected_offers++
+    }
+  })
+
+  // Calculate acceptance rates and average offered prices
+  const summaries = Array.from(summaryMap.values()).map(entry => {
+    const summary = entry.summary
+    summary.acceptance_rate = summary.total_offers > 0 
+      ? Math.round((summary.accepted_offers / summary.total_offers) * 100)
+      : 0
+    
+    // Calculate average offered price
+    summary.average_offered_price = entry.offeredAmounts.length > 0
+      ? Math.round(entry.offeredAmounts.reduce((sum, amount) => sum + amount, 0) / entry.offeredAmounts.length)
+      : 0
+    
+    return summary
+  })
+
+  return summaries.sort((a, b) => b.total_offers - a.total_offers)
+}
