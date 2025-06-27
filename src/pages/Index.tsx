@@ -621,7 +621,7 @@ const ShuQApp = () => {
             }}
           >
             <Camera size={20} />
-            <span className="text-lg">Escanear nuevo producto</span>
+            <span className="text-lg">Escanear producto</span>
           </Button>
           <Button
             onClick={() => {
