@@ -869,18 +869,18 @@ const ShuQApp = () => {
   if (currentScreen === 'products') {
     return (
       <div className="min-h-screen bg-white p-4 font-lexend">
-        <div className="max-w-md mx-auto h-full flex flex-col">
+        <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {/* Header with Menu */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-4">
             <HamburgerMenu />
             <h1 className="text-lg font-semibold">ShuQ</h1>
             <div className="w-10"></div> {/* Spacer for centering */}
           </div>
 
           {/* Main Content - Perfectly Centered */}
-          <div className="flex-1 flex flex-col justify-center items-center px-4">
+          <div className="flex-1 flex flex-col justify-center items-center px-4 -mt-4">
             {/* Main Tagline - Clean & Centered */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-12 w-full max-w-sm">
               <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
                 Elegí la prenda
               </h2>
@@ -926,7 +926,7 @@ const ShuQApp = () => {
             {/* Primary CTA Button */}
             <Button
               onClick={() => setCurrentScreen('camera')}
-              className="w-full max-w-sm px-8 py-6 text-xl font-bold rounded-3xl shadow-lg transform transition-all duration-200 hover:scale-105"
+              className="w-full max-w-sm px-8 py-6 text-xl font-bold rounded-2xl shadow-lg transform transition-all duration-200 hover:scale-105"
               style={{
                 backgroundColor: '#B5FFA3',
                 color: '#000'
@@ -1010,7 +1010,7 @@ const ShuQApp = () => {
   if (currentScreen === 'camera') {
     return (
       <div className="min-h-screen bg-white p-4 font-lexend">
-        <div className="max-w-md mx-auto h-full">
+        <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center mb-4 relative z-10">
             <Button 
@@ -1025,9 +1025,9 @@ const ShuQApp = () => {
           </div>
 
           {/* Camera Container */}
-          <div className="relative h-full flex flex-col">
+          <div className="relative flex-1 flex flex-col -mt-2">
             {/* Video Element */}
-            <div className="flex-1 relative rounded-3xl overflow-hidden bg-black">
+            <div className="relative rounded-3xl overflow-hidden bg-black" style={{ height: '60vh' }}>
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
@@ -1076,31 +1076,7 @@ const ShuQApp = () => {
             <div className="mt-4 space-y-3">
               <div className="text-center">
                 <h2 className="text-xl font-bold mb-2">Escaneá el código QR</h2>
-              </div>
-              
-              {/* Test Buttons for Development */}
-              <div className="space-y-2">
-                <Button
-                  onClick={() => handleQRResult('5245NE')}
-                  className="w-full px-4 py-3 text-sm rounded-xl"
-                  style={{
-                    backgroundColor: '#B5FFA3',
-                    color: '#000'
-                  }}
-                >
-                  🧪 Simular: SWEATER MOKA NEGRO
-                </Button>
-                
-                <Button
-                  onClick={() => handleQRResult('6604VIYMLNE')}
-                  className="w-full px-4 py-3 text-sm rounded-xl"
-                  style={{
-                    backgroundColor: '#E5E7EB',
-                    color: '#000'
-                  }}
-                >
-                  🧪 Simular: BUZO ESPRESSO NEGRO
-                </Button>
+                <p className="text-gray-600 text-sm">Apuntá la cámara al código QR de la prenda</p>
               </div>
               
               <Button 
