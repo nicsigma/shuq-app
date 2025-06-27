@@ -1115,14 +1115,14 @@ const ShuQApp = () => {
       <div className="min-h-screen bg-white p-4 font-lexend">
         <div className="max-w-md mx-auto">
           {/* Header with Menu and Title */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-6">
             <HamburgerMenu />
             <h1 className="text-lg font-semibold">ShuQ</h1>
             <div className="w-10"></div> {/* Spacer for centering */}
           </div>
 
           {/* Product Card */}
-          <div className="bg-gray-50 rounded-2xl p-4 mb-8">
+          <div className="bg-gray-50 rounded-2xl p-4 mb-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                 <ProductImage
@@ -1155,12 +1155,12 @@ const ShuQApp = () => {
           )}
 
           {/* Question */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-5">
             {existingOffer ? "Tu oferta actual:" : "¿Cuánto querés pagar?"}
           </h3>
 
           {/* Slider Section - Disabled if existing offer */}
-          <div className="mb-6">
+          <div className="mb-5">
             <div className="relative mb-3">
               <input
                 type="range"
@@ -1184,7 +1184,7 @@ const ShuQApp = () => {
 
           {/* Attempts Section - Only show if no existing offer */}
           {!existingOffer && (
-            <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+            <div className="bg-gray-50 rounded-2xl p-4 mb-5">
               <div className="text-center">
                 <div className="flex justify-center gap-2 mb-2">
                   {attemptsRemaining === 3 && (
@@ -1217,7 +1217,7 @@ const ShuQApp = () => {
           )}
 
           {/* Price Display */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <p className="text-5xl font-bold text-gray-900 mb-2">
               ${(existingOffer ? existingOffer.offeredPrice : offerPrice).toLocaleString()}
             </p>
@@ -1268,7 +1268,7 @@ const ShuQApp = () => {
         <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
           <div className="max-w-md mx-auto w-full">
             {/* Header with Menu */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-4">
               <HamburgerMenu />
               <h1 className="text-lg font-semibold text-gray-700">ShuQ</h1>
               <div className="w-6"></div> {/* Spacer for center alignment */}
@@ -1277,65 +1277,62 @@ const ShuQApp = () => {
             <div className="flex-1 flex flex-col justify-center px-4">
               
               {/* Enhanced Green success card with discount */}
-              <div className="bg-gradient-to-r from-green-300 to-green-400 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-lg" 
+              <div className="bg-gradient-to-r from-green-300 to-green-400 rounded-2xl p-4 mb-6 relative overflow-hidden shadow-lg" 
                    style={{
                      boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3), 0 4px 10px rgba(34, 197, 94, 0.2)'
                    }}>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   {/* Happy face without background */}
                   <div className="flex-shrink-0">
                     <img 
                       src="/lovable-uploads/happy-face-accepted.png" 
                       alt="Happy face" 
-                      className="w-16 h-16 object-contain"
+                      className="w-12 h-12 object-contain"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😄</div>';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="text-3xl">😄</div>';
                       }}
                     />
                   </div>
                   {/* Success text with discount */}
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">¡Tu oferta fue aceptada!</h2>
-                    <p className="text-lg font-medium text-gray-800">Obtuviste {discountPercentage}% OFF</p>
+                    <h2 className="text-lg font-bold text-gray-900 mb-1">¡Tu oferta fue aceptada!</h2>
+                    <p className="text-base font-medium text-gray-800">Obtuviste {discountPercentage}% OFF</p>
                   </div>
                 </div>
               </div>
 
               {/* Instructions */}
-              <div className="text-center mb-8">
-                <p className="text-gray-600 text-base font-medium">
-                  Mostrá este cupón en caja
-                </p>
-                <p className="text-gray-600 text-base font-medium">
-                  y pagá lo que ofertaste
+              <div className="text-center mb-5">
+                <p className="text-gray-600 text-sm font-medium">
+                  Mostrá este cupón en caja y pagá lo que ofertaste
                 </p>
               </div>
               
               {/* Coupon code in light grey rectangle */}
-              <div className="bg-gray-100 rounded-2xl p-8 mb-6 border-2 border-gray-200 shadow-md">
+              <div className="bg-gray-100 rounded-2xl p-6 mb-5 border-2 border-gray-200 shadow-md">
                 <div className="text-center">
-                  <p className="text-5xl font-bold text-gray-900 mb-3 tracking-wider font-mono">
+                  <p className="text-4xl font-bold text-gray-900 mb-2 tracking-wider font-mono">
                     {acceptedCoupon?.code || 'NOCB1FFP'}
                   </p>
-                  <p className="text-gray-700 text-base font-medium">
+                  <p className="text-gray-700 text-sm font-medium">
                     {selectedProduct?.name?.toUpperCase()} por ${offerPrice.toLocaleString()}
                   </p>
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="space-y-4 w-full mt-12">
+              <div className="space-y-3 w-full mt-6">
                 <Button 
                   onClick={() => setCurrentScreen('camera')} 
-                  className="w-full text-white rounded-2xl py-4 text-base font-medium bg-black hover:bg-gray-800"
+                  className="w-full text-white rounded-2xl py-3 text-base font-medium bg-black hover:bg-gray-800"
                 >
                   Escanear otro producto
                 </Button>
                 <Button 
                   onClick={() => setCurrentScreen('coupons')} 
                   variant="outline" 
-                  className="w-full rounded-2xl py-4 text-base font-medium border-black text-black hover:bg-gray-50"
+                  className="w-full rounded-2xl py-3 text-base font-medium border-black text-black hover:bg-gray-50"
                 >
                   Ver mis cupones
                 </Button>
