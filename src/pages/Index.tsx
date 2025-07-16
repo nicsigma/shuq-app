@@ -15,8 +15,6 @@ import {
   unsubscribeFromOfferLogs,
   transformOfferLogToCoupon,
   isOfferExpired,
-  hasSeenOnboarding,
-  markOnboardingSeen,
   OfferLog
 } from '@/lib/offerLogs';
 import { BrowserMultiFormatReader } from '@zxing/library';
@@ -94,6 +92,8 @@ interface Coupon {
   discountPercentage?: number; // For special discount coupons
   productImage?: string; // Store product image URL
   productSku?: string; // Product SKU for image fallback
+  status: 'pendiente' | 'usado' | 'cancelado'; // New status field
+  createdAt: Date; // Track when coupon was created
 }
 
 
@@ -104,7 +104,7 @@ const ShuQApp = () => {
   const [searchParams] = useSearchParams();
   const isQRSimulation = searchParams.get('qr') === 'true';
   
-  const [currentScreen, setCurrentScreen] = useState<'loader' | 'onboarding' | 'offer' | 'result' | 'coupons' | 'camera' | 'products' | 'productsList'>('loader');
+  const [currentScreen, setCurrentScreen] = useState<'loader' | 'offer' | 'result' | 'coupons' | 'camera' | 'products' | 'productsList'>('loader');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoadingProduct, setIsLoadingProduct] = useState<boolean>(false);
@@ -115,6 +115,10 @@ const ShuQApp = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [hasInteractedWithSlider, setHasInteractedWithSlider] = useState<boolean>(false);
+  
+  // State for live countdown updates in coupons screen
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   // QR Scanner state
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -184,18 +188,19 @@ const ShuQApp = () => {
   useEffect(() => {
     if (currentScreen === 'loader' && !isLoadingProduct) {
       // Determine timing based on user type
-      const isFirstTime = sku && selectedProduct && !hasSeenOnboarding();
+      const isFirstTime = sku && selectedProduct && false; // Removed hasSeenOnboarding()
       const loaderTime = isFirstTime ? 3000 : 1500; // 3s for first-time, 1.5s for returning users
       
       const timer = setTimeout(() => {
         if (sku && selectedProduct) {
           // Product page - check if first-time user
-          if (hasSeenOnboarding()) {
+          // Removed hasSeenOnboarding() check
+          if (false) { // No onboarding for returning users
             // Returning user - go directly to offer
             setCurrentScreen('offer');
           } else {
             // First-time user - show onboarding
-            setCurrentScreen('onboarding');
+            setCurrentScreen('offer'); // Changed to offer screen
           }
         } else if (!sku && allProducts.length > 0) {
           // Home page - go to products list
@@ -294,6 +299,22 @@ const ShuQApp = () => {
           (localCoupon: any) => !transformedCoupons.some(dbCoupon => dbCoupon.id === localCoupon.id)
         )];
         
+        // Add a test coupon for debugging if there are no coupons
+        if (allCoupons.length === 0) {
+          const testCoupon: Coupon = {
+            id: 'test-coupon-1',
+            productName: 'Test Product',
+            offeredPrice: 85000,
+            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+            type: 'accepted',
+            code: 'TEST123',
+            status: 'pendiente',
+            createdAt: new Date()
+          };
+          allCoupons.push(testCoupon);
+          console.log('Added test coupon for debugging');
+        }
+        
         setCoupons(allCoupons);
       } catch (error) {
         console.error('Error loading accepted offers:', error);
@@ -302,6 +323,24 @@ const ShuQApp = () => {
 
     loadAcceptedOffers();
   }, []);
+
+  // Reset slider interaction state when entering offer screen
+  useEffect(() => {
+    if (currentScreen === 'offer') {
+      setHasInteractedWithSlider(false);
+    }
+  }, [currentScreen]);
+
+  // Update time every second for live countdown (only when on coupons screen)
+  useEffect(() => {
+    if (currentScreen === 'coupons') {
+      const interval = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [currentScreen]);
 
   const saveCoupons = (newCoupons: Coupon[]) => {
     setCoupons(newCoupons);
@@ -347,7 +386,9 @@ const ShuQApp = () => {
         const newCoupon = {
           ...transformOfferLogToCoupon(offerLog),
           productImage: selectedProduct.image,
-          productSku: selectedProduct.sku
+          productSku: selectedProduct.sku,
+          status: 'pendiente' as const,
+          createdAt: new Date()
         };
         saveCoupons([...coupons, newCoupon]);
         setLastOfferResult('accepted');
@@ -369,7 +410,9 @@ const ShuQApp = () => {
           type: 'accepted',
           code: generateCode(),
           productImage: selectedProduct.image,
-          productSku: selectedProduct.sku
+          productSku: selectedProduct.sku,
+          status: 'pendiente',
+          createdAt: new Date()
         };
         saveCoupons([...coupons, newCoupon]);
         setLastOfferResult('accepted');
@@ -400,7 +443,9 @@ const ShuQApp = () => {
       type: 'accepted', // Use 'accepted' type to follow normal flow
       code: generateCode(),
       productImage: selectedProduct.image,
-      productSku: selectedProduct.sku
+      productSku: selectedProduct.sku,
+      status: 'pendiente',
+      createdAt: new Date()
     };
     saveCoupons([...coupons, specialDiscountCoupon]);
     
@@ -413,7 +458,7 @@ const ShuQApp = () => {
     setOfferPrice(75000);
     setAttemptsRemaining(3);
     setLastOfferResult(null);
-    setCurrentScreen('onboarding');
+    setCurrentScreen('offer'); // Changed to offer screen
   };
 
   const goToHomeProducts = () => {
@@ -625,6 +670,7 @@ const ShuQApp = () => {
           </Button>
           <Button
             onClick={() => {
+              console.log('Hamburger menu - Mis cupones clicked');
               setCurrentScreen('coupons');
               setIsMenuOpen(false);
             }}
@@ -692,7 +738,7 @@ const ShuQApp = () => {
   // Loader Screen
   if (currentScreen === 'loader') {
     // Check if this is the first time user (for splash screen)
-    const isFirstTime = sku && selectedProduct && !hasSeenOnboarding();
+    const isFirstTime = sku && selectedProduct && false; // Removed hasSeenOnboarding()
     
     if (isFirstTime) {
       // Show full splash screen for first-time users
@@ -752,10 +798,10 @@ const ShuQApp = () => {
       // Show simple QR icon loader for returning users
       return (
         <div className="min-h-screen bg-white font-lexend flex flex-col justify-center items-center">
-          <div className="text-center">
-            {/* QR Code Icon */}
-            <div className="mb-4">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" className="mx-auto text-gray-600">
+          <div className="text-center max-w-sm mx-auto px-4">
+            {/* Animated QR Code Icon */}
+            <div className="mb-8">
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" className="mx-auto text-gray-600 loading-qr-animation">
                 <rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
                 <rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
                 <rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -772,97 +818,23 @@ const ShuQApp = () => {
               </svg>
             </div>
             
-            {/* Loading text */}
-            <p className="text-gray-600 text-sm">Cargando...</p>
+            {/* Loading text with new copy */}
+            <p className="text-gray-700 text-lg font-medium leading-relaxed">
+              ¿Cuánto pagarías por esta prenda?
+            </p>
+            
+            {/* Loading dots animation */}
+            <div className="flex justify-center mt-4">
+              <div className="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
           </div>
         </div>
       );
     }
-  }
-
-  // Onboarding Screen
-  if (currentScreen === 'onboarding') {
-    return (
-      <div className="min-h-screen bg-white p-4 font-lexend">
-        <div className="max-w-md mx-auto">
-          {/* Header with Menu and Title */}
-          <div className="flex justify-between items-center mb-8">
-            <HamburgerMenu />
-            <h1 className="text-lg font-semibold">ShuQ</h1>
-            <div className="w-10"></div> {/* Spacer for centering */}
-          </div>
-
-          {/* Main Content */}
-          <div className="flex flex-col px-4 mt-8">
-            <h2 className="text-3xl font-bold mb-8 text-left">¿Cómo funciona?</h2>
-            
-            <div className="space-y-4 mb-8">
-              {/* Card 1 - Purple */}
-              <div className="flex items-center gap-4 p-6 rounded-3xl" style={{ backgroundColor: '#C4A5F5' }}>
-                {/* Dice/Cube Icon */}
-                <div className="flex-shrink-0">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-gray-800">
-                    <path d="M8 12L16 8L24 12L16 16L8 12Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.3"/>
-                    <path d="M8 12V20L16 24V16L8 12Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.2"/>
-                    <path d="M16 16V24L24 20V12L16 16Z" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.1"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-800 text-lg mb-1">Tenés 3 oportunidades</p>
-                  <p className="font-medium text-gray-700">para hacer tu mejor oferta.</p>
-                </div>
-              </div>
-
-              {/* Card 2 - Light Blue */}
-              <div className="flex items-center gap-4 p-6 rounded-3xl" style={{ backgroundColor: '#B3E5F7' }}>
-                {/* Slider Icon */}
-                <div className="flex-shrink-0">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-gray-800">
-                    <rect x="4" y="14" width="24" height="4" rx="2" fill="currentColor" fillOpacity="0.3"/>
-                    <circle cx="12" cy="16" r="4" fill="currentColor"/>
-                    <rect x="2" y="12" width="4" height="8" rx="2" fill="currentColor" fillOpacity="0.6"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-800 text-lg mb-1">Para ofertar</p>
-                  <p className="font-medium text-gray-700">usá el slider o ingresá el valor manualmente.</p>
-                </div>
-              </div>
-
-              {/* Card 3 - Yellow */}
-              <div className="flex items-center gap-4 p-6 rounded-3xl" style={{ backgroundColor: '#F7E89B' }}>
-                {/* Sparkle/Star Icon */}
-                <div className="flex-shrink-0">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-gray-800">
-                    <path d="M16 4L18.5 11.5L26 14L18.5 16.5L16 24L13.5 16.5L6 14L13.5 11.5L16 4Z" fill="currentColor"/>
-                    <path d="M24 8L25 10L27 11L25 12L24 14L23 12L21 11L23 10L24 8Z" fill="currentColor" fillOpacity="0.7"/>
-                    <path d="M8 6L8.5 7.5L10 8L8.5 8.5L8 10L7.5 8.5L6 8L7.5 7.5L8 6Z" fill="currentColor" fillOpacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-800 text-lg mb-1">El sistema aprueba</p>
-                  <p className="font-medium text-gray-700">las mejores ofertas ¡al instante!</p>
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={() => {
-                markOnboardingSeen();
-                setCurrentScreen('offer');
-              }}
-              className="w-full px-8 py-4 text-lg font-bold rounded-2xl"
-              style={{
-                backgroundColor: '#2D3748',
-                color: '#fff'
-              }}
-            >
-              Comenzar
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   // Home Screen - Clean & Minimalistic Design
@@ -1155,9 +1127,18 @@ const ShuQApp = () => {
           )}
 
           {/* Question */}
-          <h3 className="text-xl font-bold text-gray-900 mb-5">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
             {existingOffer ? "Tu oferta actual:" : "¿Cuánto querés pagar?"}
           </h3>
+
+          {/* Pill below heading - positioned with 8px spacing */}
+          {!existingOffer && !hasInteractedWithSlider && (
+            <div className="flex justify-center mb-5">
+              <span className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm border">
+                Mové el slider para elegir tu precio
+              </span>
+            </div>
+          )}
 
           {/* Slider Section - Disabled if existing offer */}
           <div className="mb-5">
@@ -1168,9 +1149,14 @@ const ShuQApp = () => {
                 max={selectedProduct.price}
                 step={1000}
                 value={existingOffer ? existingOffer.offeredPrice : offerPrice}
-                onChange={e => !existingOffer && setOfferPrice(Number(e.target.value))}
+                onChange={e => {
+                  if (!existingOffer) {
+                    setOfferPrice(Number(e.target.value));
+                    setHasInteractedWithSlider(true);
+                  }
+                }}
                 disabled={!!existingOffer}
-                className={`w-full thin-purple-slider ${existingOffer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full thin-purple-slider ${existingOffer ? 'opacity-50 cursor-not-allowed' : 'slider-input-animated'}`}
                 style={{
                   background: `linear-gradient(to right, #8069FF 0%, #8069FF ${(existingOffer ? existingOffer.offeredPrice : offerPrice) / selectedProduct.price * 100}%, #e5e7eb ${(existingOffer ? existingOffer.offeredPrice : offerPrice) / selectedProduct.price * 100}%, #e5e7eb 100%)`
                 }}
@@ -1268,71 +1254,67 @@ const ShuQApp = () => {
         <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
           <div className="max-w-md mx-auto w-full">
             {/* Header with Menu */}
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-6">
               <HamburgerMenu />
-              <h1 className="text-lg font-semibold text-gray-700">ShuQ</h1>
-              <div className="w-6"></div> {/* Spacer for center alignment */}
+              <h1 className="text-lg font-semibold">ShuQ</h1>
+              <div className="w-10"></div> {/* Spacer for center alignment */}
             </div>
 
             <div className="flex-1 flex flex-col justify-center px-4">
               
-              {/* Enhanced Green success card with discount */}
-              <div className="bg-gradient-to-r from-green-300 to-green-400 rounded-2xl p-4 mb-6 relative overflow-hidden shadow-lg" 
-                   style={{
-                     boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3), 0 4px 10px rgba(34, 197, 94, 0.2)'
-                   }}>
-                <div className="flex items-center gap-3">
-                  {/* Happy face without background */}
-                  <div className="flex-shrink-0">
-                    <img 
-                      src="/lovable-uploads/happy-face-accepted.png" 
-                      alt="Happy face" 
-                      className="w-12 h-12 object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div class="text-3xl">😄</div>';
-                      }}
-                    />
-                  </div>
-                  {/* Success text with discount */}
-                  <div className="flex-1">
-                    <h2 className="text-lg font-bold text-gray-900 mb-1">¡Tu oferta fue aceptada!</h2>
-                    <p className="text-base font-medium text-gray-800">Obtuviste {discountPercentage}% OFF</p>
-                  </div>
+              {/* Happy face image - centered */}
+              <div className="text-center mb-6">
+                <img 
+                  src="/lovable-uploads/happy-face-accepted.png" 
+                  alt="Happy face" 
+                  className="w-24 h-24 mx-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<div class="text-6xl">😄</div>';
+                  }}
+                />
+              </div>
+              
+              {/* Success message */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-900">¡Tu oferta fue aceptada!</h2>
+              </div>
+
+              {/* Green card with discount info */}
+              <div className="bg-green-200 rounded-2xl p-6 mb-6 text-center">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Obtuviste {discountPercentage}% OFF
+                </h3>
+                <p className="text-lg font-medium text-gray-800 mb-2">
+                  {selectedProduct?.name?.toUpperCase()} por ${offerPrice.toLocaleString()}
+                </p>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-700 mb-1">CUPÓN</p>
+                  <p className="text-2xl font-bold font-mono text-gray-900">
+                    {acceptedCoupon?.code || 'NOCB1FFP'}
+                  </p>
                 </div>
               </div>
 
               {/* Instructions */}
-              <div className="text-center mb-5">
-                <p className="text-gray-600 text-sm font-medium">
-                  Mostrá este cupón en caja y pagá lo que ofertaste
+              <div className="text-center mb-8">
+                <p className="text-gray-700 text-base font-medium">
+                  Mostrá este pantalla en caja para finalizar tu compra
                 </p>
-              </div>
-              
-              {/* Coupon code in light grey rectangle */}
-              <div className="bg-gray-100 rounded-2xl p-6 mb-5 border-2 border-gray-200 shadow-md">
-                <div className="text-center">
-                  <p className="text-4xl font-bold text-gray-900 mb-2 tracking-wider font-mono">
-                    {acceptedCoupon?.code || 'NOCB1FFP'}
-                  </p>
-                  <p className="text-gray-700 text-sm font-medium">
-                    {selectedProduct?.name?.toUpperCase()} por ${offerPrice.toLocaleString()}
-                  </p>
-                </div>
               </div>
 
               {/* Action buttons */}
-              <div className="space-y-3 w-full mt-6">
+              <div className="space-y-3 w-full">
                 <Button 
                   onClick={() => setCurrentScreen('camera')} 
-                  className="w-full text-white rounded-2xl py-3 text-base font-medium bg-black hover:bg-gray-800"
+                  className="w-full text-white rounded-2xl py-4 text-base font-medium bg-black hover:bg-gray-800"
                 >
-                  Escanear otro producto
+                  Ver más productos
                 </Button>
                 <Button 
                   onClick={() => setCurrentScreen('coupons')} 
                   variant="outline" 
-                  className="w-full rounded-2xl py-3 text-base font-medium border-black text-black hover:bg-gray-50"
+                  className="w-full rounded-2xl py-4 text-base font-medium border-black text-black hover:bg-gray-50"
                 >
                   Ver mis cupones
                 </Button>
@@ -1577,22 +1559,72 @@ const ShuQApp = () => {
 
   // Coupons Screen
   if (currentScreen === 'coupons') {
+    // Add debug logging
+    console.log('Coupons Screen - currentScreen:', currentScreen);
+    console.log('Coupons array:', coupons);
+    console.log('Coupons length:', coupons.length);
+
+    // Get coupon status based on time and admin actions
+    const getCouponStatus = (coupon: Coupon): 'pendiente' | 'usado' | 'cancelado' => {
+      const now = currentTime;
+      const thirtyMinutesAfterCreation = new Date(coupon.createdAt.getTime() + 30 * 60 * 1000);
+      
+      // If admin marked as used, return 'usado'
+      if (coupon.status === 'usado') return 'usado';
+      
+      // If 30 minutes have passed and not used, return 'cancelado'
+      if (now > thirtyMinutesAfterCreation) return 'cancelado';
+      
+      // Otherwise it's still pending
+      return 'pendiente';
+    };
+
+    const getStatusBadge = (status: string) => {
+      switch (status) {
+        case 'pendiente':
+          return <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">Pendiente</span>;
+        case 'usado':
+          return <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">Usado</span>;
+        case 'cancelado':
+          return <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded">cancelado</span>;
+        default:
+          return <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded">{status}</span>;
+      }
+    };
+
+    const getTimeRemaining = (coupon: Coupon) => {
+      const now = currentTime;
+      const thirtyMinutesAfterCreation = new Date(coupon.createdAt.getTime() + 30 * 60 * 1000);
+      const timeRemaining = thirtyMinutesAfterCreation.getTime() - now.getTime();
+      
+      if (timeRemaining <= 0) return '0:00';
+      
+      const minutesRemaining = Math.floor(timeRemaining / (1000 * 60));
+      const secondsRemaining = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+      
+      return `${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
+    };
+
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
+    console.log('Active coupons:', activeCoupons);
+    console.log('Active coupons length:', activeCoupons.length);
     
     return (
       <div className="min-h-screen bg-white p-4 font-lexend">
         <div className="max-w-md mx-auto">
-          {/* Header with Menu and Exit */}
-          <div className="flex justify-between items-center mb-4">
+          {/* Header with Menu, Title, and X */}
+          <div className="flex justify-between items-center mb-6">
             <HamburgerMenu />
+            <h1 className="text-lg font-semibold">ShuQ</h1>
             <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
               <X size={24} />
             </Button>
           </div>
 
+          {/* Title and Subtitle */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold mb-2">Mis cupones</h1>
-            <p className="text-gray-600 text-sm">Mostrá el código en caja para pagar el precio acordado.</p>
+            <p className="text-gray-600 text-sm">Presenta en caja el cupón que quieras abonar.</p>
           </div>
 
           {activeCoupons.length === 0 ? (
@@ -1617,40 +1649,13 @@ const ShuQApp = () => {
           ) : (
             <div className="space-y-4 mb-6">
               {activeCoupons.map(coupon => {
-                // Special discount coupon styling - more subtle
-                if (coupon.type === 'special-discount') {
-                  return (
-                    <Card key={coupon.id} className="p-4 rounded-2xl border border-gray-200 bg-gray-50">
-                      <div className="flex items-center gap-4">
-                        {/* Discount icon - more subtle */}
-                        <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Percent size={24} className="text-gray-600" />
-                        </div>
-                        
-                        {/* Product Info */}
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{coupon.productName}</h3>
-                          <p className="text-lg font-bold text-gray-700">
-                            {coupon.discountPercentage}% OFF
-                          </p>
-                          <div className="mt-1">
-                            <TimeDisplay expiresAt={coupon.expiresAt} />
-                          </div>
-                        </div>
-                        
-                        {/* Code Section */}
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 mb-1">Código</p>
-                          <p className="font-mono font-bold text-lg">{coupon.code}</p>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                }
-                
-                // Regular accepted offer coupon
+                const status = getCouponStatus(coupon);
+                const timeRemaining = getTimeRemaining(coupon);
+                const discountPercentage = coupon.discountPercentage || 
+                  (selectedProduct ? Math.round((selectedProduct.price - coupon.offeredPrice) / selectedProduct.price * 100) : 15);
+
                 return (
-                  <Card key={coupon.id} className="p-4 rounded-2xl">
+                  <Card key={coupon.id} className="p-4 rounded-2xl border border-gray-200">
                     <div className="flex items-center gap-4">
                       {/* Product Image */}
                       <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -1685,19 +1690,31 @@ const ShuQApp = () => {
                       
                       {/* Product Info */}
                       <div className="flex-1">
-                        <h3 className="font-semibold text-sm">{coupon.productName}</h3>
-                        <p className="text-lg font-bold text-green-600">
-                          ${coupon.offeredPrice.toLocaleString()}
-                        </p>
-                        <div className="mt-1">
-                          <TimeDisplay expiresAt={coupon.expiresAt} />
+                        <div className="text-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-sm">{coupon.productName}</h3>
+                            <span className="font-mono text-xs text-gray-500">{coupon.code}</span>
+                          </div>
+                          <p className="text-lg font-bold text-gray-900 mb-1">
+                            {discountPercentage}% OFF
+                          </p>
+                          {status === 'pendiente' && (
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <Clock size={12} />
+                              <span>{timeRemaining}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
-                      {/* Code Section */}
+                      {/* Status and Price Section */}
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 mb-1">Código</p>
-                        <p className="font-mono font-bold text-lg">{coupon.code}</p>
+                        <div className="mb-2">
+                          {getStatusBadge(status)}
+                        </div>
+                        <p className="text-lg font-bold text-gray-900">
+                          ${coupon.offeredPrice.toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </Card>

@@ -58,6 +58,36 @@ const Admin = () => {
     }
   };
 
+  const getCouponStatus = (log: OfferLog) => {
+    if (log.offer_status !== 'accepted') return 'N/A';
+    
+    const now = new Date();
+    const createdAt = new Date(log.created_at);
+    const thirtyMinutesAfterCreation = new Date(createdAt.getTime() + 30 * 60 * 1000);
+    
+    // If marked as redeemed, it's used
+    if (log.is_redeemed) return 'usado';
+    
+    // If 30 minutes have passed and not redeemed, it's cancelled
+    if (now > thirtyMinutesAfterCreation) return 'cancelado';
+    
+    // Otherwise it's still pending
+    return 'pendiente';
+  };
+
+  const getCouponStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pendiente':
+        return <Badge className="bg-green-100 text-green-800">Pendiente</Badge>;
+      case 'usado':
+        return <Badge className="bg-blue-100 text-blue-800">Usado</Badge>;
+      case 'cancelado':
+        return <Badge className="bg-gray-100 text-gray-800">Cancelado</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+    }
+  };
+
   const getTotalStats = () => {
     const totalOffers = offerLogs.length;
     const acceptedOffers = offerLogs.filter(log => log.offer_status === 'accepted').length;
@@ -179,6 +209,7 @@ const Admin = () => {
                          <TableHead>Product Name</TableHead>
                          <TableHead className="text-right">List Price</TableHead>
                          <TableHead className="text-right">Avg. Offered</TableHead>
+                         <TableHead className="text-center">Avg. Discount</TableHead>
                          <TableHead className="text-center">Total Offers</TableHead>
                          <TableHead className="text-center">Accepted</TableHead>
                          <TableHead className="text-center">Rejected</TableHead>
@@ -186,39 +217,46 @@ const Admin = () => {
                        </TableRow>
                      </TableHeader>
                     <TableBody>
-                                             {offerSummary.map((summary) => (
-                         <TableRow key={summary.product_sku}>
-                           <TableCell className="font-mono text-sm">{summary.product_sku}</TableCell>
-                           <TableCell className="font-medium">{summary.product_name}</TableCell>
-                           <TableCell className="text-right font-semibold">
-                             {formatCurrency(summary.product_price)}
-                           </TableCell>
-                           <TableCell className="text-right">
-                             <div className="flex flex-col items-end">
-                               <span className="font-medium">{formatCurrency(summary.average_offered_price)}</span>
-                               <span className="text-xs text-gray-500">
-                                 ({Math.round((summary.average_offered_price / summary.product_price) * 100)}% of list)
-                               </span>
-                             </div>
-                           </TableCell>
-                           <TableCell className="text-center">{summary.total_offers}</TableCell>
-                           <TableCell className="text-center">
-                             <span className="text-green-600 font-semibold">{summary.accepted_offers}</span>
-                           </TableCell>
-                           <TableCell className="text-center">
-                             <span className="text-red-600 font-semibold">{summary.rejected_offers}</span>
-                           </TableCell>
-                           <TableCell className="text-center">
-                             <div className="flex items-center justify-center gap-2">
-                               <div className={`w-2 h-2 rounded-full ${
-                                 summary.acceptance_rate >= 50 ? 'bg-green-500' : 
-                                 summary.acceptance_rate >= 25 ? 'bg-yellow-500' : 'bg-red-500'
-                               }`}></div>
-                               <span className="font-semibold">{summary.acceptance_rate}%</span>
-                             </div>
-                           </TableCell>
-                         </TableRow>
-                       ))}
+                                             {offerSummary.map((summary) => {
+                         const avgDiscountPercentage = Math.round((summary.product_price - summary.average_offered_price) / summary.product_price * 100);
+                         
+                         return (
+                           <TableRow key={summary.product_sku}>
+                             <TableCell className="font-mono text-sm">{summary.product_sku}</TableCell>
+                             <TableCell className="font-medium">{summary.product_name}</TableCell>
+                             <TableCell className="text-right font-semibold">
+                               {formatCurrency(summary.product_price)}
+                             </TableCell>
+                             <TableCell className="text-right">
+                               <div className="flex flex-col items-end">
+                                 <span className="font-medium">{formatCurrency(summary.average_offered_price)}</span>
+                                 <span className="text-xs text-gray-500">
+                                   ({Math.round((summary.average_offered_price / summary.product_price) * 100)}% of list)
+                                 </span>
+                               </div>
+                             </TableCell>
+                             <TableCell className="text-center">
+                               <span className="font-semibold text-purple-600">{avgDiscountPercentage}%</span>
+                             </TableCell>
+                             <TableCell className="text-center">{summary.total_offers}</TableCell>
+                             <TableCell className="text-center">
+                               <span className="text-green-600 font-semibold">{summary.accepted_offers}</span>
+                             </TableCell>
+                             <TableCell className="text-center">
+                               <span className="text-red-600 font-semibold">{summary.rejected_offers}</span>
+                             </TableCell>
+                             <TableCell className="text-center">
+                               <div className="flex items-center justify-center gap-2">
+                                 <div className={`w-2 h-2 rounded-full ${
+                                   summary.acceptance_rate >= 50 ? 'bg-green-500' : 
+                                   summary.acceptance_rate >= 25 ? 'bg-yellow-500' : 'bg-red-500'
+                                 }`}></div>
+                                 <span className="font-semibold">{summary.acceptance_rate}%</span>
+                               </div>
+                             </TableCell>
+                           </TableRow>
+                         );
+                       })}
                     </TableBody>
                   </Table>
                 </div>
@@ -246,35 +284,46 @@ const Admin = () => {
                         <TableHead>Product Name</TableHead>
                         <TableHead>Original Price</TableHead>
                         <TableHead>Offered Amount</TableHead>
+                        <TableHead>Discount %</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Coupon Status</TableHead>
                         <TableHead>Attempts Left</TableHead>
                         <TableHead>Code</TableHead>
                         <TableHead>Expires</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {offerLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell className="text-sm">
-                            {formatDate(log.created_at)}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs text-gray-600 max-w-24 truncate">
-                            {log.session_id}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{log.product_sku}</TableCell>
-                          <TableCell className="max-w-48 truncate">{log.product_name}</TableCell>
-                          <TableCell>{formatCurrency(log.product_price)}</TableCell>
-                          <TableCell className="font-semibold">{formatCurrency(log.offered_amount)}</TableCell>
-                          <TableCell>{getStatusBadge(log.offer_status)}</TableCell>
-                          <TableCell className="text-center">{log.attempts_remaining}</TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {log.acceptance_code || '-'}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {log.expires_at ? formatDate(log.expires_at) : '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {offerLogs.map((log) => {
+                        const discountPercentage = Math.round((log.product_price - log.offered_amount) / log.product_price * 100);
+                        const couponStatus = getCouponStatus(log);
+                        
+                        return (
+                          <TableRow key={log.id}>
+                            <TableCell className="text-sm">
+                              {formatDate(log.created_at)}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-gray-600 max-w-24 truncate">
+                              {log.session_id}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{log.product_sku}</TableCell>
+                            <TableCell className="max-w-48 truncate">{log.product_name}</TableCell>
+                            <TableCell>{formatCurrency(log.product_price)}</TableCell>
+                            <TableCell className="font-semibold">{formatCurrency(log.offered_amount)}</TableCell>
+                            <TableCell className="text-center font-semibold">
+                              {discountPercentage}%
+                            </TableCell>
+                            <TableCell>{getStatusBadge(log.offer_status)}</TableCell>
+                            <TableCell>{getCouponStatusBadge(couponStatus)}</TableCell>
+                            <TableCell className="text-center">{log.attempts_remaining}</TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {log.acceptance_code || '-'}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {log.expires_at ? formatDate(log.expires_at) : '-'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

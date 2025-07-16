@@ -216,7 +216,9 @@ export const transformOfferLogToCoupon = (offerLog: OfferLog) => ({
   code: offerLog.acceptance_code || '',
   productImage: undefined, // We'll need to get this from products table if needed
   productSku: offerLog.product_sku, // Include SKU for image fallback
-  isRedeemed: offerLog.is_redeemed
+  isRedeemed: offerLog.is_redeemed,
+  status: offerLog.is_redeemed ? 'usado' : 'pendiente' as 'pendiente' | 'usado' | 'cancelado',
+  createdAt: new Date(offerLog.created_at)
 })
 
 // Admin functions - get all offer logs (no session filter)
