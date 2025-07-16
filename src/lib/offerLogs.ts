@@ -201,6 +201,24 @@ export const subscribeToSessionOfferLogs = (callback: (payload: any) => void) =>
   return subscription
 }
 
+// Subscribe to all offer log changes (global, for admin updates)
+export const subscribeToAllOfferLogs = (callback: (payload: any) => void) => {
+  const subscription = supabase
+    .channel('all_offer_logs')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'offer_logs',
+      },
+      callback
+    )
+    .subscribe()
+
+  return subscription
+}
+
 // Unsubscribe from offer log changes
 export const unsubscribeFromOfferLogs = (subscription: any) => {
   supabase.removeChannel(subscription)

@@ -12,6 +12,7 @@ import {
   getAcceptedOffers, 
   getRemainingAttempts, 
   subscribeToSessionOfferLogs, 
+  subscribeToAllOfferLogs,
   unsubscribeFromOfferLogs,
   transformOfferLogToCoupon,
   isOfferExpired,
@@ -299,22 +300,6 @@ const ShuQApp = () => {
           (localCoupon: any) => !transformedCoupons.some(dbCoupon => dbCoupon.id === localCoupon.id)
         )];
         
-        // Add a test coupon for debugging if there are no coupons
-        if (allCoupons.length === 0) {
-          const testCoupon: Coupon = {
-            id: 'test-coupon-1',
-            productName: 'Test Product',
-            offeredPrice: 85000,
-            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-            type: 'accepted',
-            code: 'TEST123',
-            status: 'pendiente',
-            createdAt: new Date()
-          };
-          allCoupons.push(testCoupon);
-          console.log('Added test coupon for debugging');
-        }
-        
         setCoupons(allCoupons);
       } catch (error) {
         console.error('Error loading accepted offers:', error);
@@ -322,6 +307,18 @@ const ShuQApp = () => {
     };
 
     loadAcceptedOffers();
+
+    // Subscribe to offer log changes for real-time updates from admin actions
+    const subscription = subscribeToAllOfferLogs((payload) => {
+      // When an offer is updated (e.g., marked as redeemed by admin), reload coupons
+      if (payload.eventType === 'UPDATE') {
+        loadAcceptedOffers();
+      }
+    });
+
+    return () => {
+      unsubscribeFromOfferLogs(subscription);
+    };
   }, []);
 
   // Reset slider interaction state when entering offer screen
@@ -670,7 +667,6 @@ const ShuQApp = () => {
           </Button>
           <Button
             onClick={() => {
-              console.log('Hamburger menu - Mis cupones clicked');
               setCurrentScreen('coupons');
               setIsMenuOpen(false);
             }}
@@ -1559,17 +1555,13 @@ const ShuQApp = () => {
 
   // Coupons Screen
   if (currentScreen === 'coupons') {
-    // Add debug logging
-    console.log('Coupons Screen - currentScreen:', currentScreen);
-    console.log('Coupons array:', coupons);
-    console.log('Coupons length:', coupons.length);
 
     // Get coupon status based on time and admin actions
     const getCouponStatus = (coupon: Coupon): 'pendiente' | 'usado' | 'cancelado' => {
       const now = currentTime;
       const thirtyMinutesAfterCreation = new Date(coupon.createdAt.getTime() + 30 * 60 * 1000);
       
-      // If admin marked as used, return 'usado'
+      // If admin marked as used, return 'usado' (this comes from database via is_redeemed field)
       if (coupon.status === 'usado') return 'usado';
       
       // If 30 minutes have passed and not used, return 'cancelado'
@@ -1606,8 +1598,6 @@ const ShuQApp = () => {
     };
 
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
-    console.log('Active coupons:', activeCoupons);
-    console.log('Active coupons length:', activeCoupons.length);
     
     return (
       <div className="min-h-screen bg-white p-4 font-lexend">

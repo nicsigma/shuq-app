@@ -4,17 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Database, TrendingUp, TrendingDown, Users, ShoppingBag } from "lucide-react";
-import { getAllOfferLogs, getOfferSummaryBySku, OfferLog, OfferSummary } from '@/lib/offerLogs';
+import { getAllOfferLogs, getOfferSummaryBySku, markOfferAsRedeemed, OfferLog, OfferSummary } from '@/lib/offerLogs';
 
 const Admin = () => {
   const [offerLogs, setOfferLogs] = useState<OfferLog[]>([]);
   const [offerSummary, setOfferSummary] = useState<OfferSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [activeTab, setActiveTab] = useState('summary');
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Update current time every second for live countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-refresh data every 30 seconds to keep admin data fresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
@@ -61,7 +82,7 @@ const Admin = () => {
   const getCouponStatus = (log: OfferLog) => {
     if (log.offer_status !== 'accepted') return 'N/A';
     
-    const now = new Date();
+    const now = currentTime;
     const createdAt = new Date(log.created_at);
     const thirtyMinutesAfterCreation = new Date(createdAt.getTime() + 30 * 60 * 1000);
     
@@ -73,6 +94,23 @@ const Admin = () => {
     
     // Otherwise it's still pending
     return 'pendiente';
+  };
+
+  const getTimeRemaining = (log: OfferLog) => {
+    if (log.offer_status !== 'accepted') return null;
+    if (log.is_redeemed) return null;
+    
+    const now = currentTime;
+    const createdAt = new Date(log.created_at);
+    const thirtyMinutesAfterCreation = new Date(createdAt.getTime() + 30 * 60 * 1000);
+    const timeRemaining = thirtyMinutesAfterCreation.getTime() - now.getTime();
+    
+    if (timeRemaining <= 0) return '0:00';
+    
+    const minutesRemaining = Math.floor(timeRemaining / (1000 * 60));
+    const secondsRemaining = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+    
+    return `${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
   };
 
   const getCouponStatusBadge = (status: string) => {
@@ -95,6 +133,33 @@ const Admin = () => {
     const overallAcceptanceRate = totalOffers > 0 ? Math.round((acceptedOffers / totalOffers) * 100) : 0;
     
     return { totalOffers, acceptedOffers, rejectedOffers, overallAcceptanceRate };
+  };
+
+  const handleStatusChange = async (logId: string, newStatus: string) => {
+    try {
+      if (newStatus === 'usado') {
+        await markOfferAsRedeemed(logId);
+        // Reload data to reflect changes
+        await loadData();
+      }
+      // Note: 'cancelado' status is handled automatically by time expiration
+      // We don't need to manually set it since it's calculated based on time
+    } catch (error) {
+      console.error('Error updating coupon status:', error);
+      setError('Error updating coupon status. Please try again.');
+    }
+  };
+
+  const canMarkAsUsed = (log: OfferLog): boolean => {
+    if (log.offer_status !== 'accepted') return false;
+    if (log.is_redeemed) return false; // Already used
+    
+    const now = currentTime;
+    const createdAt = new Date(log.created_at);
+    const thirtyMinutesAfterCreation = new Date(createdAt.getTime() + 30 * 60 * 1000);
+    
+    // Can only mark as used if still within 30 minutes and not already cancelled
+    return now <= thirtyMinutesAfterCreation;
   };
 
   if (isLoading) {
@@ -184,7 +249,7 @@ const Admin = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="summary" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -313,7 +378,32 @@ const Admin = () => {
                               {discountPercentage}%
                             </TableCell>
                             <TableCell>{getStatusBadge(log.offer_status)}</TableCell>
-                            <TableCell>{getCouponStatusBadge(couponStatus)}</TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {canMarkAsUsed(log) ? (
+                                  <Select
+                                    value={couponStatus}
+                                    onValueChange={(value) => handleStatusChange(log.id, value)}
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                                      <SelectItem value="usado">Usado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  getCouponStatusBadge(couponStatus)
+                                )}
+                                {getTimeRemaining(log) && (
+                                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                                    <span>⏱️</span>
+                                    <span>{getTimeRemaining(log)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="text-center">{log.attempts_remaining}</TableCell>
                             <TableCell className="font-mono text-sm">
                               {log.acceptance_code || '-'}
@@ -321,6 +411,7 @@ const Admin = () => {
                             <TableCell className="text-sm">
                               {log.expires_at ? formatDate(log.expires_at) : '-'}
                             </TableCell>
+
                           </TableRow>
                         );
                       })}
