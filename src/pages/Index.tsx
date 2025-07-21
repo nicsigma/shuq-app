@@ -846,14 +846,14 @@ const ShuQApp = () => {
           </div>
 
           {/* Main Content - Perfectly Centered */}
-          <div className="flex-1 flex flex-col justify-center items-center px-4 -mt-4">
-            {/* Main Tagline - Clean & Centered */}
-            <div className="text-center mb-12 w-full max-w-sm">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-                Elegí la prenda
+          <div className="flex-1 flex flex-col justify-center items-center px-4">
+            {/* Main Tagline - Clean & Centered in 2 lines */}
+            <div className="text-center mb-8 w-full max-w-sm">
+              <h2 className="text-3xl font-bold text-gray-900 leading-tight">
+                Elegí la prenda y
               </h2>
-              <p className="text-4xl font-bold text-gray-900 relative">
-                y proponé{" "}
+              <p className="text-3xl font-bold text-gray-900">
+                proponé{" "}
                 <span className="relative inline-block">
                   tu precio.
                   {/* Crayon-style underline */}
@@ -909,7 +909,7 @@ const ShuQApp = () => {
                 navigate('/');
                 setCurrentScreen('productsList');
               }}
-              className="mt-6 text-gray-500 text-lg font-medium underline decoration-dotted hover:text-gray-700 transition-colors"
+              className="mt-4 text-gray-500 text-lg font-medium underline decoration-dotted hover:text-gray-700 transition-colors"
             >
               Ver productos disponibles
             </button>
@@ -1044,7 +1044,6 @@ const ShuQApp = () => {
             <div className="mt-4 space-y-3">
               <div className="text-center">
                 <h2 className="text-xl font-bold mb-2">Escaneá el código QR</h2>
-                <p className="text-gray-600 text-sm">Apuntá la cámara al código QR de la prenda</p>
               </div>
               
               <Button 
@@ -1072,22 +1071,23 @@ const ShuQApp = () => {
       new Date() < coupon.expiresAt
     );
     
-    // Initialize offer price to product price if not set
-    if (offerPrice === 75000 || offerPrice < selectedProduct.price * 0.1) {
+    // Initialize offer price to product price if not set (only on first load)
+    if (offerPrice === 75000) {
       setOfferPrice(selectedProduct.price);
     }
     
     const discountPercentage = Math.round((selectedProduct.price - offerPrice) / selectedProduct.price * 100);
 
     return (
-      <div className="min-h-screen bg-white p-4 font-lexend">
-        <div className="max-w-md mx-auto">
-          {/* Header with Menu and Title */}
-          <div className="flex justify-between items-center mb-6">
-            <HamburgerMenu />
-            <h1 className="text-lg font-semibold">ShuQ</h1>
-            <div className="w-10"></div> {/* Spacer for centering */}
-          </div>
+      <div className="min-h-screen bg-white font-lexend flex flex-col">
+        <div className="flex-1 p-4 pb-20">
+          <div className="max-w-md mx-auto">
+            {/* Header with Menu and Title */}
+            <div className="flex justify-between items-center mb-6">
+              <HamburgerMenu />
+              <h1 className="text-lg font-semibold">ShuQ</h1>
+              <div className="w-10"></div> {/* Spacer for centering */}
+            </div>
 
           {/* Product Card */}
           <div className="bg-gray-50 rounded-2xl p-4 mb-6">
@@ -1211,26 +1211,34 @@ const ShuQApp = () => {
             </p>
           </div>
 
-          {/* Action Button */}
-          {existingOffer ? (
-            <Button
-              onClick={() => setCurrentScreen('coupons')}
-              className="w-full rounded-2xl py-4 text-lg font-bold bg-green-600 text-white hover:bg-green-700"
-            >
-              Ver cupón
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSendOffer}
-              className="w-full rounded-2xl py-4 text-lg font-bold"
-              style={{
-                backgroundColor: '#B5FFA3',
-                color: '#000'
-              }}
-            >
-              Ofertar
-            </Button>
-          )}
+          </div>
+        </div>
+        
+        {/* Fixed Bottom Button */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white">
+          <div className="max-w-md mx-auto">
+            {existingOffer ? (
+              <Button
+                onClick={() => setCurrentScreen('coupons')}
+                className="w-full rounded-2xl bg-green-600 text-white hover:bg-green-700 font-bold"
+                style={{ height: '40px' }}
+              >
+                Ver cupón
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSendOffer}
+                className="w-full rounded-2xl font-bold"
+                style={{
+                  backgroundColor: '#B5FFA3',
+                  color: '#000',
+                  height: '40px'
+                }}
+              >
+                Ofertar
+              </Button>
+            )}
+          </div>
         </div>
 
         <ConfirmExitDialog open={showExitDialog} onClose={() => setShowExitDialog(false)} onConfirm={handleExit} />
@@ -1247,74 +1255,83 @@ const ShuQApp = () => {
       const discountPercentage = selectedProduct ? Math.round((selectedProduct.price - offerPrice) / selectedProduct.price * 100) : 0;
 
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
-          <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu */}
-            <div className="flex justify-between items-center mb-6">
-              <HamburgerMenu />
-              <h1 className="text-lg font-semibold">ShuQ</h1>
-              <div className="w-10"></div> {/* Spacer for center alignment */}
-            </div>
-
-            <div className="flex-1 flex flex-col justify-center px-4">
+        <div className="min-h-screen bg-white font-lexend flex flex-col">
+          <div className="flex-1 p-4 pb-24">
+            <div className="max-w-md mx-auto">
+              {/* Header with Menu */}
+              <div className="flex justify-between items-center mb-4">
+                <HamburgerMenu />
+                <h1 className="text-lg font-semibold">ShuQ</h1>
+                <div className="w-10"></div> {/* Spacer for center alignment */}
+              </div>
               
-              {/* Happy face image - centered */}
-              <div className="text-center mb-6">
+              {/* Happy face image - smaller */}
+              <div className="text-center mb-4">
                 <img 
                   src="/lovable-uploads/happy-face-accepted.png" 
                   alt="Happy face" 
-                  className="w-24 h-24 mx-auto object-contain"
+                  className="w-16 h-16 mx-auto object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<div class="text-6xl">😄</div>';
+                    e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😄</div>';
                   }}
                 />
               </div>
               
-              {/* Success message */}
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">¡Tu oferta fue aceptada!</h2>
+              {/* Success message - smaller */}
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">¡Tu oferta fue aceptada!</h2>
               </div>
 
-              {/* Green card with discount info */}
-              <div className="bg-green-200 rounded-2xl p-6 mb-6 text-center">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              {/* Green card with restructured content */}
+              <div className="bg-green-200 rounded-2xl p-4 mb-4 text-center">
+                {/* Line 1: Discount title */}
+                <h3 className="text-xl font-bold text-gray-900 mb-1">
                   Obtuviste {discountPercentage}% OFF
                 </h3>
-                <p className="text-lg font-medium text-gray-800 mb-2">
-                  {selectedProduct?.name?.toUpperCase()} por ${offerPrice.toLocaleString()}
+                {/* Line 2: Product name */}
+                <p className="text-lg font-medium text-gray-800 mb-1">
+                  {selectedProduct?.name?.toUpperCase()}
                 </p>
-                <div className="mt-4">
-                  <p className="text-sm text-gray-700 mb-1">CUPÓN</p>
-                  <p className="text-2xl font-bold font-mono text-gray-900">
+                                 {/* Line 3: Price (bold) */}
+                 <p className="text-xl font-bold text-gray-900 mb-3">
+                   por ${offerPrice.toLocaleString()}
+                 </p>
+                <div>
+                  <p className="text-xs text-gray-700 mb-1">CUPÓN</p>
+                  <p className="text-lg font-bold font-mono text-gray-900">
                     {acceptedCoupon?.code || 'NOCB1FFP'}
                   </p>
                 </div>
               </div>
 
-              {/* Instructions */}
-              <div className="text-center mb-8">
-                <p className="text-gray-700 text-base font-medium">
+              {/* Instructions - compact */}
+              <div className="text-center">
+                <p className="text-gray-700 text-sm font-medium">
                   Mostrá este pantalla en caja para finalizar tu compra
                 </p>
               </div>
-
-              {/* Action buttons */}
-              <div className="space-y-3 w-full">
-                <Button 
-                  onClick={() => setCurrentScreen('camera')} 
-                  className="w-full text-white rounded-2xl py-4 text-base font-medium bg-black hover:bg-gray-800"
-                >
-                  Ver más productos
-                </Button>
-                <Button 
-                  onClick={() => setCurrentScreen('coupons')} 
-                  variant="outline" 
-                  className="w-full rounded-2xl py-4 text-base font-medium border-black text-black hover:bg-gray-50"
-                >
-                  Ver mis cupones
-                </Button>
-              </div>
+            </div>
+          </div>
+          
+          {/* Fixed Bottom CTAs */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+            <div className="max-w-md mx-auto space-y-2">
+              <Button 
+                onClick={() => setCurrentScreen('camera')} 
+                className="w-full text-white rounded-2xl font-medium bg-black hover:bg-gray-800"
+                style={{ height: '40px' }}
+              >
+                Ver más productos
+              </Button>
+              <Button 
+                onClick={() => setCurrentScreen('coupons')} 
+                variant="outline" 
+                className="w-full rounded-2xl font-medium border-black text-black hover:bg-gray-50"
+                style={{ height: '40px' }}
+              >
+                Ver mis cupones
+              </Button>
             </div>
           </div>
 
@@ -1326,80 +1343,78 @@ const ShuQApp = () => {
     // Rejected - check if no attempts remaining (Final rejection screen) - Blue theme
     if (attemptsRemaining === 0) {
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
-          <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu */}
-            <div className="flex justify-between items-center mb-8">
-              <HamburgerMenu />
-              <h1 className="text-lg font-semibold">ShuQ</h1>
-              <div className="w-6"></div>
-            </div>
+        <div className="min-h-screen bg-white font-lexend flex flex-col">
+          <div className="flex-1 p-4 pb-20">
+            <div className="max-w-md mx-auto">
+              {/* Header with Menu */}
+              <div className="flex justify-between items-center mb-6">
+                <HamburgerMenu />
+                <h1 className="text-lg font-semibold">ShuQ</h1>
+                <div className="w-6"></div>
+              </div>
 
-            <div className="flex-1 flex flex-col justify-center px-4">
-              {/* Blue colored card with rejected face */}
-              <div className="bg-gradient-to-r from-blue-200 to-blue-300 rounded-2xl p-6 mb-8">
-                <div className="flex items-center gap-4">
+              {/* Blue colored card with rejected face - Left aligned, 2 lines */}
+              <div className="bg-gradient-to-r from-blue-200 to-blue-300 rounded-2xl p-4 mb-4">
+                <div className="flex items-center gap-3">
                   <div className="flex-shrink-0">
                     <img 
                       src="/lovable-uploads/rejected-face.png" 
                       alt="Rejected face" 
-                      className="w-16 h-16 object-contain"
+                      className="w-12 h-12 object-contain"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😔</div>';
+                        e.currentTarget.parentElement!.innerHTML = '<div class="text-3xl">😔</div>';
                       }}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">No se dio esta vez</h2>
-                    <p className="text-base font-medium text-gray-800">¡Pero no te vas con las manos vacías!</p>
+                  <div className="flex-1 text-left">
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight">No se dio esta vez</h2>
+                    <p className="text-lg font-bold text-gray-900">¡Pero no te vas con las manos vacías!</p>
                   </div>
                 </div>
               </div>
 
-              {/* Description text */}
-              <div className="text-center mb-6">
-                <p className="text-gray-700 text-base font-medium">
+              {/* Description text - More compact */}
+              <div className="text-center mb-4">
+                <p className="text-gray-700 text-sm font-medium">
                   Desbloqueaste un descuento exclusivo para llevarte esta prenda igual.
                 </p>
               </div>
 
-              {/* Special Discount Section - More Bouncy */}
-              <div className="text-center mb-8">
-                {/* Prominent OFERTA ESPECIAL header */}
-                <div className="mb-6">
-                  <h3 className="text-4xl font-extrabold tracking-wide" style={{ color: '#87CEEB' }}>
+              {/* Special Discount Section - Compact */}
+              <div className="text-center">
+                {/* Compact OFERTA ESPECIAL header */}
+                <div className="mb-4">
+                  <h3 className="text-3xl font-extrabold tracking-wide" style={{ color: '#87CEEB' }}>
                     OFERTA ESPECIAL
                   </h3>
                 </div>
                 
-                {/* Enhanced Bouncy Coupon Card */}
-                <div className="relative">
-                  {/* Main coupon card with enhanced styling */}
-                  <div className="bg-white p-8 rounded-3xl transform transition-all duration-300 hover:scale-105"
-                       style={{
-                         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.08)',
-                         border: '2px solid #f0f0f0'
-                       }}>
-                    <div className="text-center">
-                      <p className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
-                        15% OFF en {selectedProduct.name}
-                      </p>
-                      <p className="text-base text-gray-600 font-medium">
-                        Cupón válido por 30 minutos
-                      </p>
-                    </div>
+                {/* Compact Coupon Card */}
+                <div className="bg-white p-6 rounded-2xl" style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)', 
+                  border: '2px solid #f0f0f0'
+                }}>
+                  <div className="text-center">
+                    <p className="text-xl font-black text-gray-900 mb-2 tracking-tight">
+                      15% OFF en {selectedProduct.name}
+                    </p>
+                    <p className="text-sm text-gray-600 font-medium">
+                      Cupón válido por 30 minutos
+                    </p>
                   </div>
-                  
-                  {/* Subtle background decoration */}
-                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-100 to-blue-200 rounded-3xl -z-10 opacity-30"></div>
                 </div>
               </div>
-
-              {/* CTA Button */}
+            </div>
+          </div>
+          
+          {/* Fixed Bottom Button */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white">
+            <div className="max-w-md mx-auto">
               <Button 
                 onClick={handleAcceptSpecialDiscount} 
-                className="w-full bg-black text-white rounded-2xl py-4 text-base font-medium hover:bg-gray-800"
+                className="w-full bg-black text-white rounded-2xl font-medium hover:bg-gray-800"
+                style={{ height: '40px' }}
               >
                 Aceptar el descuento
               </Button>
@@ -1442,9 +1457,9 @@ const ShuQApp = () => {
                       }}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">¡Estuviste cerca!</h2>
-                    <p className="text-base font-medium text-gray-800">Probá ofertar de nuevo.</p>
+                  <div className="flex-1 text-left">
+                    <h2 className="text-2xl font-bold text-gray-900 leading-tight">¡Estuviste cerca!</h2>
+                    <p className="text-2xl font-bold text-gray-900">Probá ofertar de nuevo</p>
                   </div>
                 </div>
               </div>
@@ -1509,9 +1524,9 @@ const ShuQApp = () => {
                       }}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">¡A un paso de lograrlo!</h2>
-                    <p className="text-base font-medium text-gray-800">Ofertá una vez más</p>
+                  <div className="flex-1 text-left">
+                    <h2 className="text-2xl font-bold text-gray-900 leading-tight">¡Estuviste cerca!</h2>
+                    <p className="text-2xl font-bold text-gray-900">Probá ofertar de nuevo</p>
                   </div>
                 </div>
               </div>
@@ -1600,30 +1615,30 @@ const ShuQApp = () => {
     const activeCoupons = coupons.filter(coupon => new Date() < coupon.expiresAt);
     
     return (
-      <div className="min-h-screen bg-white p-4 font-lexend">
+      <div className="min-h-screen bg-white p-3 sm:p-4 font-lexend">
         <div className="max-w-md mx-auto">
           {/* Header with Menu, Title, and X */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-4 sm:mb-6">
             <HamburgerMenu />
             <h1 className="text-lg font-semibold">ShuQ</h1>
             <Button onClick={() => setShowExitDialog(true)} variant="ghost" className="p-2">
-              <X size={24} />
+              <X size={20} className="sm:w-6 sm:h-6" />
             </Button>
           </div>
 
-          {/* Title and Subtitle */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Mis cupones</h1>
-            <p className="text-gray-600 text-sm">Presenta en caja el cupón que quieras abonar.</p>
+          {/* Title and Subtitle - Responsive */}
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold mb-2">Mis cupones</h1>
+            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">Presenta en caja el cupón que quieras abonar.</p>
           </div>
 
           {activeCoupons.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-700 font-medium mb-8">No tenés ofertas aprobadas todavía </p>
+            <div className="text-center py-8 sm:py-12">
+              <p className="text-lg sm:text-xl text-gray-700 font-medium mb-6 sm:mb-8">No tenés ofertas aprobadas todavía</p>
               <div className="space-y-3">
                 <Button
                   onClick={() => setCurrentScreen('camera')}
-                  className="w-full px-6 py-4 text-lg font-bold rounded-2xl"
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-2xl"
                   style={{
                     backgroundColor: '#B5FFA3',
                     color: '#000'
@@ -1631,13 +1646,13 @@ const ShuQApp = () => {
                 >
                   Escanear QR
                 </Button>
-                <Button onClick={goToHomeProducts} variant="outline" className="w-full rounded-2xl px-6 py-3 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white">
+                <Button onClick={goToHomeProducts} variant="outline" className="w-full rounded-2xl px-4 sm:px-6 py-3 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white text-sm sm:text-base">
                   Ver otros productos
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 sm:space-y-4 mb-6">
               {activeCoupons.map(coupon => {
                 const status = getCouponStatus(coupon);
                 const timeRemaining = getTimeRemaining(coupon);
@@ -1645,10 +1660,10 @@ const ShuQApp = () => {
                   (selectedProduct ? Math.round((selectedProduct.price - coupon.offeredPrice) / selectedProduct.price * 100) : 15);
 
                 return (
-                  <Card key={coupon.id} className="p-4 rounded-2xl border border-gray-200">
-                    <div className="flex items-center gap-4">
-                      {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <Card key={coupon.id} className="p-3 sm:p-4 rounded-2xl border border-gray-200">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                      {/* Product Image - Responsive */}
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {(() => {
                           // Get image URL from coupon or fallback to known product images
                           let imageUrl = coupon.productImage;
@@ -1672,37 +1687,42 @@ const ShuQApp = () => {
                             />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">
-                              <ShoppingBag className="w-6 h-6 text-gray-500" />
+                              <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
                             </div>
                           );
                         })()}
                       </div>
                       
-                      {/* Product Info */}
-                      <div className="flex-1">
-                        <div className="text-left">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-sm">{coupon.productName}</h3>
-                            <span className="font-mono text-xs text-gray-500">{coupon.code}</span>
+                      {/* Product Info - Responsive Layout */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-left space-y-1">
+                          {/* Product Name and Code - Stacked on small screens */}
+                          <div className="space-y-0.5 sm:space-y-0">
+                            <h3 className="font-bold text-xs sm:text-sm leading-tight line-clamp-2">{coupon.productName}</h3>
+                            <span className="font-mono text-[10px] sm:text-xs text-gray-500 block">{coupon.code}</span>
                           </div>
-                          <p className="text-lg font-bold text-gray-900 mb-1">
+                          
+                          {/* Discount - Responsive sizing */}
+                          <p className="text-base sm:text-lg font-bold text-gray-900">
                             {discountPercentage}% OFF
                           </p>
+                          
+                          {/* Timer - Compact on small screens */}
                           {status === 'pendiente' && (
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                              <Clock size={12} />
+                            <div className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1">
+                              <Clock size={10} className="sm:w-3 sm:h-3" />
                               <span>{timeRemaining}</span>
                             </div>
                           )}
                         </div>
                       </div>
                       
-                      {/* Status and Price Section */}
-                      <div className="text-right">
-                        <div className="mb-2">
+                      {/* Status and Price Section - Responsive */}
+                      <div className="text-right flex-shrink-0">
+                        <div className="mb-1 sm:mb-2">
                           {getStatusBadge(status)}
                         </div>
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-base sm:text-lg font-bold text-gray-900">
                           ${coupon.offeredPrice.toLocaleString()}
                         </p>
                       </div>
@@ -1713,12 +1733,12 @@ const ShuQApp = () => {
             </div>
           )}
 
-          {/* Add scan button when there are active coupons */}
+          {/* Add scan button when there are active coupons - Responsive */}
           {activeCoupons.length > 0 && (
-            <div className="mt-6">
+            <div className="mt-4 sm:mt-6">
               <Button
                 onClick={() => setCurrentScreen('camera')}
-                className="w-full px-6 py-4 text-lg font-bold rounded-2xl"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-2xl"
                 style={{
                   backgroundColor: '#B5FFA3',
                   color: '#000'
