@@ -117,6 +117,7 @@ const ShuQApp = () => {
   const [showExitDialog, setShowExitDialog] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [hasInteractedWithSlider, setHasInteractedWithSlider] = useState<boolean>(false);
+  const [isSpecialDiscount, setIsSpecialDiscount] = useState<boolean>(false);
   
   // State for live countdown updates in coupons screen
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -138,6 +139,7 @@ const ShuQApp = () => {
     setOfferPrice(75000);
     setAttemptsRemaining(3);
     setLastOfferResult(null);
+    setIsSpecialDiscount(false); // Reset special discount flag
     
     const loadData = async () => {
       if (sku) {
@@ -292,7 +294,8 @@ const ShuQApp = () => {
         const savedCoupons = localStorage.getItem('shuq-coupons');
         const localCoupons = savedCoupons ? JSON.parse(savedCoupons).map((coupon: any) => ({
           ...coupon,
-          expiresAt: new Date(coupon.expiresAt)
+          expiresAt: new Date(coupon.expiresAt),
+          createdAt: coupon.createdAt ? new Date(coupon.createdAt) : new Date()
         })) : [];
         
         // Remove duplicates and combine
@@ -365,6 +368,9 @@ const ShuQApp = () => {
     const minAcceptablePrice = selectedProduct.price * (1 - selectedProduct.maxDiscountPercentage / 100);
     const isAccepted = offerPrice >= minAcceptablePrice;
     const newAttempts = isAccepted ? attemptsRemaining : attemptsRemaining - 1;
+    
+    // Reset special discount flag since this is a normal offer
+    setIsSpecialDiscount(false);
     
     try {
       // Create offer log in database
@@ -446,15 +452,15 @@ const ShuQApp = () => {
     };
     saveCoupons([...coupons, specialDiscountCoupon]);
     
-    // Follow normal accepted offer flow
-    setLastOfferResult('accepted');
-    setCurrentScreen('result');
+    // Go directly to coupons section instead of accepted screen
+    setCurrentScreen('coupons');
   };
 
   const resetFlow = () => {
     setOfferPrice(75000);
     setAttemptsRemaining(3);
     setLastOfferResult(null);
+    setIsSpecialDiscount(false); // Reset special discount flag
     setCurrentScreen('offer'); // Changed to offer screen
   };
 
@@ -1317,21 +1323,45 @@ const ShuQApp = () => {
           {/* Fixed Bottom CTAs */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
             <div className="max-w-md mx-auto space-y-2">
-              <Button 
-                onClick={() => setCurrentScreen('camera')} 
-                className="w-full text-white rounded-2xl font-medium bg-black hover:bg-gray-800"
-                style={{ height: '40px' }}
-              >
-                Ver más productos
-              </Button>
-              <Button 
-                onClick={() => setCurrentScreen('coupons')} 
-                variant="outline" 
-                className="w-full rounded-2xl font-medium border-black text-black hover:bg-gray-50"
-                style={{ height: '40px' }}
-              >
-                Ver mis cupones
-              </Button>
+              {isSpecialDiscount ? (
+                // Special Discount buttons
+                <>
+                  <Button 
+                    onClick={() => setCurrentScreen('coupons')} 
+                    className="w-full text-white rounded-2xl font-medium bg-black hover:bg-gray-800"
+                    style={{ height: '40px' }}
+                  >
+                    Ver mis cupones
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentScreen('camera')} 
+                    variant="outline" 
+                    className="w-full rounded-2xl font-medium border-black text-black hover:bg-gray-50"
+                    style={{ height: '40px' }}
+                  >
+                    Ofertar otro producto
+                  </Button>
+                </>
+              ) : (
+                // Normal accepted offer buttons
+                <>
+                  <Button 
+                    onClick={() => setCurrentScreen('camera')} 
+                    className="w-full text-white rounded-2xl font-medium bg-black hover:bg-gray-800"
+                    style={{ height: '40px' }}
+                  >
+                    Ver más productos
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentScreen('coupons')} 
+                    variant="outline" 
+                    className="w-full rounded-2xl font-medium border-black text-black hover:bg-gray-50"
+                    style={{ height: '40px' }}
+                  >
+                    Ver mis cupones
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -1433,59 +1463,66 @@ const ShuQApp = () => {
     // First attempt (2 attempts remaining) - Peach/Orange theme
     if (attemptsRemaining === 2) {
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
-          <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu and Exit */}
-            <div className="flex justify-between items-center mb-8">
-              <HamburgerMenu />
-              <h1 className="text-lg font-semibold">ShuQ</h1>
-              <div className="w-6"></div>
+        <div className="min-h-screen bg-white font-lexend flex flex-col">
+          <div className="flex-1 p-4 pb-20">
+            <div className="max-w-md mx-auto">
+              {/* Header with Menu and Exit */}
+              <div className="flex justify-between items-center mb-8">
+                <HamburgerMenu />
+                <h1 className="text-lg font-semibold">ShuQ</h1>
+                <div className="w-6"></div>
+              </div>
+
+              <div className="flex flex-col justify-center px-4 mt-8">
+                {/* Peach colored card */}
+                <div className="bg-gradient-to-r from-orange-200 to-orange-300 rounded-2xl p-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <img 
+                        src="/lovable-uploads/intent-1-face.png" 
+                        alt="Close face" 
+                        className="w-12 h-12 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<div class="text-3xl">😌</div>';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h2 className="text-lg font-bold text-gray-900 leading-tight">¡Estuviste cerca!</h2>
+                      <p className="text-lg font-bold text-gray-900">Probá ofertar de nuevo</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tip section */}
+                <div className="text-center mb-6">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
+                  <p className="text-gray-600 text-sm">
+                    A veces un pequeño ajuste hace toda la diferencia
+                  </p>
+                </div>
+
+                {/* Attempts remaining */}
+                <div className="flex justify-center items-center gap-2 mb-8">
+                  <div className="flex gap-2">
+                    <span className="text-2xl opacity-30">⚪</span>
+                    <span className="text-2xl">🙉</span>
+                    <span className="text-2xl">🙈</span>
+                  </div>
+                  <span className="text-gray-700 font-medium ml-2">Te quedan dos intentos</span>
+                </div>
+              </div>
             </div>
-
-            <div className="flex-1 flex flex-col justify-center px-4">
-              {/* Peach colored card */}
-              <div className="bg-gradient-to-r from-orange-200 to-orange-300 rounded-2xl p-6 mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0">
-                    <img 
-                      src="/lovable-uploads/intent-1-face.png" 
-                      alt="Close face" 
-                      className="w-16 h-16 object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😌</div>';
-                      }}
-                    />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h2 className="text-2xl font-bold text-gray-900 leading-tight">¡Estuviste cerca!</h2>
-                    <p className="text-2xl font-bold text-gray-900">Probá ofertar de nuevo</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tip section */}
-              <div className="text-center mb-6">
-                <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
-                <p className="text-gray-600 text-sm">
-                  A veces un pequeño ajuste hace toda la diferencia
-                </p>
-              </div>
-
-              {/* Attempts remaining */}
-              <div className="flex justify-center items-center gap-2 mb-8">
-                <div className="flex gap-2">
-                  <span className="text-2xl opacity-30">⚪</span>
-                  <span className="text-2xl">🙉</span>
-                  <span className="text-2xl">🙈</span>
-                </div>
-                <span className="text-gray-700 font-medium ml-2">Te quedan dos intentos</span>
-              </div>
-
-              {/* CTA Button */}
+          </div>
+          
+          {/* Fixed Bottom Button */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white">
+            <div className="max-w-md mx-auto">
               <Button
                 onClick={() => setCurrentScreen('offer')}
-                className="w-full bg-black text-white rounded-2xl py-4 text-base font-medium hover:bg-gray-800"
+                className="w-full bg-black text-white rounded-2xl font-medium hover:bg-gray-800"
+                style={{ height: '40px' }}
               >
                 Hacer nueva oferta
               </Button>
@@ -1500,59 +1537,66 @@ const ShuQApp = () => {
     // Second attempt (1 attempt remaining) - Purple theme
     if (attemptsRemaining === 1) {
       return (
-        <div className="min-h-screen bg-white p-4 flex flex-col font-lexend">
-          <div className="max-w-md mx-auto w-full">
-            {/* Header with Menu and Exit */}
-            <div className="flex justify-between items-center mb-8">
-              <HamburgerMenu />
-              <h1 className="text-lg font-semibold">ShuQ</h1>
-              <div className="w-6"></div>
+        <div className="min-h-screen bg-white font-lexend flex flex-col">
+          <div className="flex-1 p-4 pb-20">
+            <div className="max-w-md mx-auto">
+              {/* Header with Menu and Exit */}
+              <div className="flex justify-between items-center mb-8">
+                <HamburgerMenu />
+                <h1 className="text-lg font-semibold">ShuQ</h1>
+                <div className="w-6"></div>
+              </div>
+
+              <div className="flex flex-col justify-center px-4 mt-8">
+                {/* Purple colored card */}
+                <div className="bg-gradient-to-r from-purple-200 to-purple-300 rounded-2xl p-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <img 
+                        src="/lovable-uploads/intent-2-face.png" 
+                        alt="Heart eyes face" 
+                        className="w-12 h-12 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<div class="text-3xl">😍</div>';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h2 className="text-lg font-bold text-gray-900 leading-tight">¡Una más!</h2>
+                      <p className="text-lg font-bold text-gray-900">Esta es tu última chance</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tip section */}
+                <div className="text-center mb-6">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
+                  <p className="text-gray-600 text-sm">
+                    Esta es la jugada clave, ¡que sea la más precisa!
+                  </p>
+                </div>
+
+                {/* Attempts remaining */}
+                <div className="flex justify-center items-center gap-2 mb-8">
+                  <div className="flex gap-2">
+                    <span className="text-2xl opacity-30">⚪</span>
+                    <span className="text-2xl opacity-30">⚪</span>
+                    <span className="text-2xl">🙈</span>
+                  </div>
+                  <span className="text-gray-700 font-medium ml-2">Te queda un intento</span>
+                </div>
+              </div>
             </div>
-
-            <div className="flex-1 flex flex-col justify-center px-4">
-              {/* Purple colored card */}
-              <div className="bg-gradient-to-r from-purple-200 to-purple-300 rounded-2xl p-6 mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0">
-                    <img 
-                      src="/lovable-uploads/intent-2-face.png" 
-                      alt="Heart eyes face" 
-                      className="w-16 h-16 object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div class="text-4xl">😍</div>';
-                      }}
-                    />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h2 className="text-2xl font-bold text-gray-900 leading-tight">¡Estuviste cerca!</h2>
-                    <p className="text-2xl font-bold text-gray-900">Probá ofertar de nuevo</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tip section */}
-              <div className="text-center mb-6">
-                <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
-                <p className="text-gray-600 text-sm">
-                  Esta es la jugada clave, ¡que sea la más precisa!
-                </p>
-              </div>
-
-              {/* Attempts remaining */}
-              <div className="flex justify-center items-center gap-2 mb-8">
-                <div className="flex gap-2">
-                  <span className="text-2xl opacity-30">⚪</span>
-                  <span className="text-2xl opacity-30">⚪</span>
-                  <span className="text-2xl">🙈</span>
-                </div>
-                <span className="text-gray-700 font-medium ml-2">Te queda un intento</span>
-              </div>
-
-              {/* CTA Button */}
+          </div>
+          
+          {/* Fixed Bottom Button */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white">
+            <div className="max-w-md mx-auto">
               <Button
                 onClick={() => setCurrentScreen('offer')}
-                className="w-full bg-black text-white rounded-2xl py-4 text-base font-medium hover:bg-gray-800"
+                className="w-full bg-black text-white rounded-2xl font-medium hover:bg-gray-800"
+                style={{ height: '40px' }}
               >
                 Hacer nueva oferta
               </Button>
