@@ -641,6 +641,18 @@ const ShuQApp = () => {
           </Button>
           <Button
             onClick={() => {
+              navigate('/');
+              setCurrentScreen('productsList');
+              setIsMenuOpen(false);
+            }}
+            variant="ghost"
+            className="flex items-center gap-3 justify-start p-4 h-auto"
+          >
+            <ShoppingBag size={20} />
+            <span className="text-lg">Ver productos disponibles</span>
+          </Button>
+          <Button
+            onClick={() => {
               setCurrentScreen('camera');
               setIsMenuOpen(false);
             }}
@@ -890,6 +902,17 @@ const ShuQApp = () => {
             >
               Escanear código QR
             </Button>
+
+            {/* Subtle secondary action */}
+            <button
+              onClick={() => {
+                navigate('/');
+                setCurrentScreen('productsList');
+              }}
+              className="mt-4 text-gray-500 text-lg font-medium underline decoration-dotted hover:text-gray-700 transition-colors"
+            >
+              Ver productos disponibles
+            </button>
           </div>
         </div>
       </div>
