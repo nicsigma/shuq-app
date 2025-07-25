@@ -1108,7 +1108,7 @@ const ShuQApp = () => {
           {!existingOffer && (
             <div className="flex justify-center mb-5">
               <span className="text-xs text-gray-400 font-normal">
-                Mové el slider para elegir tu precio
+              Arrastrá el círculo para elegir el precio
               </span>
             </div>
           )}
@@ -1120,11 +1120,21 @@ const ShuQApp = () => {
                 type="range"
                 min={0}
                 max={selectedProduct.price}
-                step={1000}
+                step={1}
                 value={existingOffer ? existingOffer.offeredPrice : offerPrice}
                 onChange={e => {
                   if (!existingOffer) {
-                    setOfferPrice(Number(e.target.value));
+                    const rawValue = Number(e.target.value);
+                    const maxPrice = selectedProduct.price;
+                    const lastThousandStep = Math.floor(maxPrice / 1000) * 1000;
+                    
+                    // If we're close to the maximum (within the last 1000 range), allow exact maximum
+                    if (rawValue > lastThousandStep) {
+                      setOfferPrice(maxPrice);
+                    } else {
+                      // Otherwise, snap to nearest 1000
+                      setOfferPrice(Math.round(rawValue / 1000) * 1000);
+                    }
                     setHasInteractedWithSlider(true);
                   }
                 }}
