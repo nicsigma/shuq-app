@@ -1057,17 +1057,17 @@ const ShuQApp = () => {
 
     return (
       <div className="min-h-screen bg-white font-lexend flex flex-col">
-        <div className="flex-1 p-4 pb-20">
+        <div className="flex-1 p-4 pb-16">
           <div className="max-w-md mx-auto">
             {/* Header with Menu and Title */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-3">
               <HamburgerMenu />
               <h1 className="text-lg font-semibold">ShuQ</h1>
               <div className="w-10"></div> {/* Spacer for centering */}
             </div>
 
           {/* Product Card */}
-          <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+          <div className="bg-gray-50 rounded-2xl p-3 mb-2">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                 <ProductImage
@@ -1086,7 +1086,7 @@ const ShuQApp = () => {
 
           {/* Existing Offer Alert */}
           {existingOffer && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-3 mb-3">
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
                 <div className="flex-1">
@@ -1100,13 +1100,13 @@ const ShuQApp = () => {
           )}
 
           {/* Question */}
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
+          <h3 className="text-xl font-bold text-gray-900 mb-1">
             {existingOffer ? "Tu oferta actual:" : "¿Cuánto querés pagar?"}
           </h3>
 
           {/* Instructional text below heading */}
           {!existingOffer && (
-            <div className="flex justify-center mb-5">
+            <div className="flex justify-center mb-2">
               <span className="text-xs text-gray-400 font-normal">
               Arrastrá el círculo para elegir el precio
               </span>
@@ -1114,8 +1114,8 @@ const ShuQApp = () => {
           )}
 
           {/* Slider Section - Disabled if existing offer */}
-          <div className="mb-5">
-            <div className="relative mb-3">
+          <div className="mb-2">
+            <div className="relative mb-2">
               <input
                 type="range"
                 min={0}
@@ -1153,9 +1153,9 @@ const ShuQApp = () => {
 
           {/* Attempts Section - Only show if no existing offer */}
           {!existingOffer && (
-            <div className="bg-gray-50 rounded-2xl p-4 mb-5">
+            <div className="bg-gray-50 rounded-2xl p-2 mb-2">
               <div className="text-center">
-                <div className="flex justify-center gap-2 mb-2">
+                <div className="flex justify-center gap-2 mb-1">
                   {attemptsRemaining === 3 && (
                     <>
                       <span className="text-2xl">🙊</span>
@@ -1186,8 +1186,8 @@ const ShuQApp = () => {
           )}
 
           {/* Price Display */}
-          <div className="text-center mb-6">
-            <p className="text-5xl font-bold text-gray-900 mb-2">
+          <div className="text-center mb-1">
+            <p className="text-4xl font-bold text-gray-900 mb-1">
               ${(existingOffer ? existingOffer.offeredPrice : offerPrice).toLocaleString()}
             </p>
             <p className="text-gray-600">
