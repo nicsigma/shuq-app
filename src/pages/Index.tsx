@@ -1104,10 +1104,10 @@ const ShuQApp = () => {
             {existingOffer ? "Tu oferta actual:" : "¿Cuánto querés pagar?"}
           </h3>
 
-          {/* Pill below heading - positioned with 8px spacing */}
-          {!existingOffer && !hasInteractedWithSlider && (
+          {/* Instructional text below heading */}
+          {!existingOffer && (
             <div className="flex justify-center mb-5">
-              <span className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm border">
+              <span className="text-xs text-gray-400 font-normal">
                 Mové el slider para elegir tu precio
               </span>
             </div>
