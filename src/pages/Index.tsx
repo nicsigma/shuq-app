@@ -1445,7 +1445,7 @@ const ShuQApp = () => {
               <div className="text-center mb-6">
                 <p className="text-sm font-semibold text-gray-900 mb-2">¿Sabías que?</p>
                 <p className="text-gray-600 text-sm">
-                  A veces un pequeño ajuste hace toda la diferencia
+                  A veces, un pequeño ajuste hace toda la diferencia
                 </p>
               </div>
 
