@@ -292,3 +292,17 @@
 button, input[type="range"] {
   min-height: 44px;
 }
+
+/* Subtle pulse animation for slider when not interacted */
+@keyframes slider-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(128, 105, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(128, 105, 255, 0.1);
+  }
+}
+
+.slider-pulse {
+  animation: slider-pulse 2s ease-in-out infinite;
+}

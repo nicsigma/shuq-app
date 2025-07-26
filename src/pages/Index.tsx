@@ -1100,22 +1100,69 @@ const ShuQApp = () => {
           )}
 
           {/* Question */}
-          <h3 className="text-xl font-bold text-gray-900 mb-1">
+          <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">
             {existingOffer ? "Tu oferta actual:" : "¿Cuánto querés pagar?"}
           </h3>
 
-          {/* Instructional text below heading */}
+          {/* Attempts Section - Only show if no existing offer */}
           {!existingOffer && (
-            <div className="flex justify-center mb-2">
-              <span className="text-xs text-gray-400 font-normal">
+            <div className="text-center mb-8">
+              <div className="flex justify-center gap-2 mb-3">
+                {attemptsRemaining === 3 && (
+                  <>
+                    <span className="text-3xl">🙊</span>
+                    <span className="text-3xl">🙉</span>
+                    <span className="text-3xl">🙈</span>
+                  </>
+                )}
+                {attemptsRemaining === 2 && (
+                  <>
+                    <span className="text-3xl opacity-30">⚪</span>
+                    <span className="text-3xl">🙉</span>
+                    <span className="text-3xl">🙈</span>
+                  </>
+                )}
+                {attemptsRemaining === 1 && (
+                  <>
+                    <span className="text-3xl opacity-30">⚪</span>
+                    <span className="text-3xl opacity-30">⚪</span>
+                    <span className="text-3xl">🙈</span>
+                  </>
+                )}
+              </div>
+              <span className="text-gray-700 font-medium text-lg">
+                {attemptsRemaining === 1 ? 'Tenés un intento' : `Tenés ${attemptsRemaining} intentos`}
+              </span>
+            </div>
+          )}
+
+          {/* Price Display */}
+          <div className="text-center mb-8">
+            <p className="text-5xl font-bold text-gray-900 mb-3">
+              ${(existingOffer ? existingOffer.offeredPrice : offerPrice).toLocaleString()}
+            </p>
+            <p className="text-gray-600 text-lg">
+              {existingOffer 
+                ? `${Math.round((selectedProduct.price - existingOffer.offeredPrice) / selectedProduct.price * 100)}% OFF del precio de lista`
+                : discountPercentage === 0 
+                  ? "Precio de lista" 
+                  : `${discountPercentage}% OFF del precio de lista`
+              }
+            </p>
+          </div>
+
+          {/* Instructional text */}
+          {!existingOffer && (
+            <div className="flex justify-center mb-6">
+              <span className="text-sm font-normal" style={{ color: '#8069FF' }}>
               Arrastrá el círculo para elegir el precio
               </span>
             </div>
           )}
 
-          {/* Slider Section - Disabled if existing offer */}
-          <div className="mb-2">
-            <div className="relative mb-2">
+          {/* Slider Section - Moved to bottom for thumb access */}
+          <div className="mb-6">
+            <div className="relative mb-4">
               <input
                 type="range"
                 min={0}
@@ -1139,7 +1186,7 @@ const ShuQApp = () => {
                   }
                 }}
                 disabled={!!existingOffer}
-                className={`w-full thin-purple-slider ${existingOffer ? 'opacity-50 cursor-not-allowed' : 'slider-input-animated'}`}
+                className={`w-full thin-purple-slider ${existingOffer ? 'opacity-50 cursor-not-allowed' : hasInteractedWithSlider ? 'slider-input-animated' : 'slider-input-animated slider-pulse'}`}
                 style={{
                   background: `linear-gradient(to right, #8069FF 0%, #8069FF ${(existingOffer ? existingOffer.offeredPrice : offerPrice) / selectedProduct.price * 100}%, #e5e7eb ${(existingOffer ? existingOffer.offeredPrice : offerPrice) / selectedProduct.price * 100}%, #e5e7eb 100%)`
                 }}
@@ -1149,53 +1196,6 @@ const ShuQApp = () => {
               <span>$0</span>
               <span>${selectedProduct.price.toLocaleString()}</span>
             </div>
-          </div>
-
-          {/* Attempts Section - Only show if no existing offer */}
-          {!existingOffer && (
-            <div className="bg-gray-50 rounded-2xl p-2 mb-2">
-              <div className="text-center">
-                <div className="flex justify-center gap-2 mb-1">
-                  {attemptsRemaining === 3 && (
-                    <>
-                      <span className="text-2xl">🙊</span>
-                      <span className="text-2xl">🙉</span>
-                      <span className="text-2xl">🙈</span>
-                    </>
-                  )}
-                  {attemptsRemaining === 2 && (
-                    <>
-                      <span className="text-2xl opacity-30">⚪</span>
-                      <span className="text-2xl">🙉</span>
-                      <span className="text-2xl">🙈</span>
-                    </>
-                  )}
-                  {attemptsRemaining === 1 && (
-                    <>
-                      <span className="text-2xl opacity-30">⚪</span>
-                      <span className="text-2xl opacity-30">⚪</span>
-                      <span className="text-2xl">🙈</span>
-                    </>
-                  )}
-                </div>
-                <span className="text-gray-700 font-medium">
-                  {attemptsRemaining === 1 ? 'Tenés un intento' : `Tenés ${attemptsRemaining} intentos`}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Price Display */}
-          <div className="text-center mb-1">
-            <p className="text-4xl font-bold text-gray-900 mb-1">
-              ${(existingOffer ? existingOffer.offeredPrice : offerPrice).toLocaleString()}
-            </p>
-            <p className="text-gray-600">
-              {existingOffer 
-                ? `${Math.round((selectedProduct.price - existingOffer.offeredPrice) / selectedProduct.price * 100)}% OFF del precio original`
-                : `${discountPercentage}% OFF del precio original`
-              }
-            </p>
           </div>
 
           </div>
